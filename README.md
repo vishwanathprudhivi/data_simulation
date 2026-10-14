@@ -24,6 +24,7 @@ onboarding kit.
 | M9 Scenario compiler, Findings & narrative | done |
 | M10 Conversational analyst (tools, grounding, golden set) | done |
 | M11 Web frontend (React + TS, Playwright e2e) | done |
+| M12 Domain onboarding kit (mapping, fitting, backtest, CLI) | done |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -55,6 +56,14 @@ make lint test                  # ruff, mypy, import-linter; tests (no GPU/Redis
 ```
 
 See [`docs/guides/experiments.md`](docs/guides/experiments.md).
+
+Onboarding a new domain (Tier 0, no Python) — see [`docs/guides/onboarding.md`](docs/guides/onboarding.md):
+
+```bash
+.venv/bin/simcore domain validate examples/onboarding/packaging_line
+.venv/bin/simcore domain backtest examples/onboarding/packaging_line --out runs/report   # PASS
+.venv/bin/simcore domain backtest examples/onboarding/packaging_line_misspecified       # FAIL + fixes
+```
 
 Service (API at http://127.0.0.1:8000/api/v1/docs):
 

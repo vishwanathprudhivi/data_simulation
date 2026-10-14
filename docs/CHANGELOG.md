@@ -1,5 +1,24 @@
 # Changelog
 
+## M12 – Domain onboarding kit (2026-10-14)
+
+**Exit gate:** AC-DOM-01 (the Tier-0 packaging line goes from `domain.yaml` + sample
+CSVs to a PASS Validation Report with zero Python, following
+`docs/guides/onboarding.md`) and AC-DOM-02 (a deliberately mis-specified copy fails
+the backtest gate with specific actions: case packer capacity and batch size) —
+passing.
+
+Implemented: FR-DOM-04 data mapping layer (`mapping.yaml`) and data-quality report;
+FR-DOM-05 auto input modeling into a draft definition; FR-DOM-06 backtest with error,
+bias, prediction-interval coverage and residual KS, pass/warn/fail rating, station
+diagnostics and the calibrated envelope; FR-DOM-07 facility CSV ingestion and a
+minimal USD scene; FR-DOM-08 `simcore domain init|validate|backtest|publish|
+ingest-facility`; FR-DOM-10 versioned publishing with the report; FR-DOM-11
+onboarding guide with a worked example and synthetic sample data; FR-SCG-10 data
+attachments API (`/attachments`, proposed mapping, validated application).
+
+Decisions: ADR-016.
+
 ## M11 – Frontend (2026-10-14)
 
 **Exit gate:** AC-UI-01 (Playwright: create a scenario via chat, tweak a field in the

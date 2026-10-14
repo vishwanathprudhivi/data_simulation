@@ -142,3 +142,4 @@ frontend/dist/
 frontend/test-results/
 frontend/playwright-report/
 .e2e-data/
+examples/onboarding/*/report/

@@ -24,6 +24,14 @@ class ArtifactStore(ABC):
     @abstractmethod
     def keys(self, prefix: str) -> list[str]: ...
 
+    def put_bytes(self, key: str, data: bytes) -> None:
+        import tempfile
+
+        with tempfile.NamedTemporaryFile() as fh:
+            fh.write(data)
+            fh.flush()
+            self.put_file(key, Path(fh.name))
+
     def put_tree(self, prefix: str, root: Path) -> list[str]:
         keys = []
         for path in sorted(p for p in root.rglob("*") if p.is_file()):

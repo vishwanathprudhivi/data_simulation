@@ -10,6 +10,7 @@ import asyncio
 import io
 import json
 import logging
+import re
 import time
 import uuid
 from collections import defaultdict
@@ -172,6 +173,20 @@ class GapRequest(BaseModel):
     domain: str = Field(max_length=100)
     request: str = Field(min_length=1, max_length=2000)
     detail: str = Field(default="", max_length=4000)
+
+
+class AttachmentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=200)
+    content: str = Field(description="CSV text (max 5 MB).")
+
+
+class ApplyAttachmentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scenario: ScenarioRef
+    source: dict[str, Any] = Field(description="SourceSpec without 'path' (kind, columns, ...).")
+    arrival_paths: dict[str, str] = Field(default_factory=dict)
+    lever: str | None = Field(default=None, description="samples: distribution lever to set.")
 
 
 class CompileRequest(BaseModel):
@@ -636,6 +651,63 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
         for r in page:
             r["data"] = json.loads(r["data"])
         return {"total": len(rows), "offset": offset, "rows": page}
+
+    # ------------------------------------------------------------------ attachments (FR-SCG-10)
+
+    @app.post(f"{API}/attachments", status_code=201)
+    def upload_attachment(body: AttachmentRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Store a CSV and propose how it maps to scenario inputs (not applied yet)."""
+        from services.platform.attachments import inspect_csv, propose_mapping
+
+        try:
+            info = inspect_csv(body.content)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        att_id = f"att_{uuid.uuid4().hex[:12]}"
+        artifacts.put_bytes(f"{who.workspace}/attachments/{att_id}.csv", body.content.encode())
+        store.audit("attachment.upload", user=who.user, workspace=who.workspace, target=att_id,
+                    outcome=body.name[:100])  # fmt: skip
+        return {"id": att_id, "name": body.name, **info, "proposal": propose_mapping(info)}
+
+    @app.post(f"{API}/attachments/{{att_id}}/apply")
+    def apply_attachment_(
+        att_id: str, body: ApplyAttachmentRequest, who: Caller = Depends(caller)
+    ) -> dict[str, Any]:
+        """Validate a mapping on the uploaded data and return validated scenario inputs."""
+        from pydantic import ValidationError
+
+        from services.platform.attachments import apply_attachment
+        from simcore.specs.mapping import SourceSpec
+
+        if not re.fullmatch(r"att_[0-9a-f]{12}", att_id):
+            raise HTTPException(404, f"attachment {att_id!r} not found")
+        try:
+            content = artifacts.get_bytes(f"{who.workspace}/attachments/{att_id}.csv").decode()
+        except KeyError as exc:
+            raise HTTPException(404, f"attachment {att_id!r} not found") from exc
+        try:
+            source = SourceSpec.model_validate({"path": "attachment.csv", **body.source})
+        except ValidationError as exc:
+            raise HTTPException(422, exc.errors(include_url=False)) from exc
+        bundle, _ = resolve(body.scenario, who)
+        out = apply_attachment(content, source, domain=bundle.scenario.domain,
+                               arrival_paths=body.arrival_paths)  # fmt: skip
+        levers: dict[str, Any] = {}
+        if body.lever and out.get("fitted"):
+            levers[body.lever] = out["fitted"]["spec"]
+        if out["data_quality"]["ok"] and (out["overrides"] or levers):
+            ref = body.scenario.model_copy(
+                update={
+                    "overrides": {**body.scenario.overrides, **out["overrides"]},
+                    "levers": {**body.scenario.levers, **levers},
+                }
+            )
+            validated, info = resolve(ref, who)
+            plugins.get(validated.scenario.domain).validate_scenario(validated)
+            out["scenario"] = ref.model_dump(mode="json", exclude_defaults=True)
+            out["config_hash"] = validated.config_hash
+            out.update(info)
+        return out
 
     # ------------------------------------------------------------------ compile & findings (M9)
 

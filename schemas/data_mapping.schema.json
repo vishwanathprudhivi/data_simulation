@@ -1,0 +1,222 @@
+{
+  "$defs": {
+    "BacktestSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "arrival_paths": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "work-item type -> scenario path of its mean interarrival time.",
+          "title": "Arrival Paths",
+          "type": "object"
+        },
+        "base_scenario": {
+          "description": "Scenario each period starts from (relative path).",
+          "title": "Base Scenario",
+          "type": "string"
+        },
+        "kpis": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "metric id -> observed column of the periods source.",
+          "title": "Kpis",
+          "type": "object"
+        },
+        "levers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "lever id -> column of the periods source.",
+          "title": "Levers",
+          "type": "object"
+        },
+        "periods": {
+          "description": "Id of the observed_kpis source with one row per period.",
+          "title": "Periods",
+          "type": "string"
+        },
+        "replications": {
+          "default": 5,
+          "minimum": 2,
+          "title": "Replications",
+          "type": "integer"
+        },
+        "tolerance": {
+          "$ref": "#/$defs/Tolerance"
+        }
+      },
+      "required": [
+        "base_scenario",
+        "periods",
+        "kpis"
+      ],
+      "title": "BacktestSpec",
+      "type": "object"
+    },
+    "SourceSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "engine field -> CSV header, e.g. {station: 'Station', start: 'Start'}.",
+          "title": "Columns",
+          "type": "object"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "samples: what the values describe (e.g. a station id).",
+          "title": "Group"
+        },
+        "kind": {
+          "enum": [
+            "station_events",
+            "arrivals",
+            "downtime",
+            "observed_kpis",
+            "samples"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "description": "CSV path, relative to the mapping file.",
+          "title": "Path",
+          "type": "string"
+        },
+        "time_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "strptime format; default ISO 8601.",
+          "title": "Time Format"
+        },
+        "timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "IANA zone of naive timestamps.",
+          "title": "Timezone"
+        },
+        "units": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Units of numeric duration columns, e.g. {setup: s}.",
+          "title": "Units",
+          "type": "object"
+        }
+      },
+      "required": [
+        "path",
+        "kind",
+        "columns"
+      ],
+      "title": "SourceSpec",
+      "type": "object"
+    },
+    "Tolerance": {
+      "additionalProperties": false,
+      "description": "Backtest gate: mean absolute relative error and coverage thresholds.",
+      "properties": {
+        "pass_coverage": {
+          "default": 0.8,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Pass Coverage",
+          "type": "number"
+        },
+        "pass_error": {
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "title": "Pass Error",
+          "type": "number"
+        },
+        "warn_coverage": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Warn Coverage",
+          "type": "number"
+        },
+        "warn_error": {
+          "default": 0.2,
+          "exclusiveMinimum": 0,
+          "title": "Warn Error",
+          "type": "number"
+        }
+      },
+      "title": "Tolerance",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:data_mapping:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "backtest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BacktestSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "domain": {
+      "title": "Domain",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "additionalProperties": {
+        "$ref": "#/$defs/SourceSpec"
+      },
+      "title": "Sources",
+      "type": "object"
+    },
+    "timezone": {
+      "default": "UTC",
+      "description": "Default zone of naive timestamps.",
+      "title": "Timezone",
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "sources"
+  ],
+  "title": "DataMappingSpec",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

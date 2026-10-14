@@ -1,0 +1,35 @@
+# Same data as ../packaging_line; only domain.yaml differs (mis-specified, AC-DOM-02).
+# Engine field -> column header in the MES exports under data/ (synthetic, see generate_data.py).
+schema_version: "1.0"
+domain: packaging_line
+timezone: Europe/Berlin
+sources:
+  station_log:
+    path: ../packaging_line/data/station_log.csv
+    kind: station_events
+    columns: {station: Station, server: Line Server, start: Start Time, end: End Time,
+              setup: "Setup (s)", items: Trays}
+    time_format: "%d.%m.%Y %H:%M:%S.%f"
+    units: {setup: s}
+  releases:
+    path: ../packaging_line/data/tray_releases.csv
+    kind: arrivals
+    columns: {time: Released At, sku: SKU}
+  downtime:
+    path: ../packaging_line/data/downtime.csv
+    kind: downtime
+    columns: {station: Station, start: Down From, end: Down Until}
+    time_format: "%d.%m.%Y %H:%M:%S.%f"
+  shifts:
+    path: ../packaging_line/data/shifts.csv
+    kind: observed_kpis
+    columns: {period: Shift, start: Start, end: End, operators: Operators,
+              line_output: Trays packed}
+    time_format: "%d.%m.%Y %H:%M:%S.%f"
+backtest:
+  base_scenario: ../../scenarios/packaging_line/baseline.yaml
+  periods: shifts
+  levers: {operators: operators}
+  arrival_paths: {A: demand.demand.interarrival.mean, B: demand.demand_b.interarrival.mean}
+  kpis: {line_output: line_output}
+  replications: 4

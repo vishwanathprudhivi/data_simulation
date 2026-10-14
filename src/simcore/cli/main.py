@@ -448,5 +448,14 @@ def domains_show(name: str, plugins: tuple[str, ...]) -> None:
     click.echo(json.dumps(manifest.model_dump(mode="json"), indent=2))
 
 
+def _register_domain_commands() -> None:
+    from simcore.cli.domain_cmds import domain
+
+    cli.add_command(domain)
+
+
+_register_domain_commands()
+
+
 def main() -> None:  # pragma: no cover
     cli()

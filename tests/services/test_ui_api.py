@@ -105,3 +105,44 @@ def test_generated_frontend_types_cover_every_schema() -> None:
     schemas = {p.name.replace(".schema.json", "") for p in (root / "schemas").glob("*.schema.json")}
     generated = {p.stem for p in (root / "frontend" / "src" / "generated").glob("*.ts")} - {"index"}
     assert schemas == generated, "run `make schemas` then `cd frontend && npm run gen:types`"
+
+
+def test_FR_SCG_10_attachment_proposed_validated_and_applied(env: Any) -> None:
+    c, _ = env
+    lines = ["Released At,Product"] + [
+        f"2026-05-04T08:{(i * 30) // 60:02d}:{(i * 30) % 60:02d}+02:00,{'A' if i % 2 else 'B'}"
+        for i in range(60)
+    ]
+    up = c.post("/api/v1/attachments", json={"name": "demand.csv", "content": "\n".join(lines)})
+    assert up.status_code == 201, up.text
+    att = up.json()
+    assert att["rows"] == 60 and att["proposal"]["kind"] == "arrivals"
+    assert att["proposal"]["columns"] == {"time": "Released At", "sku": "Product"}
+    r = c.post(
+        f"/api/v1/attachments/{att['id']}/apply",
+        json={
+            "scenario": {"example": "scenarios/toy_queue/mmc_baseline.yaml"},
+            "source": {"kind": "arrivals", "columns": {"time": "Released At"}},
+            "arrival_paths": {"*": "demand.demand.interarrival.mean"},
+        },
+    )
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["data_quality"]["ok"]
+    assert out["overrides"] == {"demand.demand.interarrival.mean": 30.0}
+    assert out["scenario"]["overrides"] == {"demand.demand.interarrival.mean": 30.0}
+    assert out["config_hash"]
+    # bad mappings are refused with the data-quality report, nothing is applied
+    bad = c.post(
+        f"/api/v1/attachments/{att['id']}/apply",
+        json={
+            "scenario": {"example": "scenarios/toy_queue/mmc_baseline.yaml"},
+            "source": {"kind": "arrivals", "columns": {"time": "Product"}},
+            "arrival_paths": {"*": "demand.demand.interarrival.mean"},
+        },
+    ).json()
+    assert not bad["data_quality"]["ok"] and "scenario" not in bad
+    assert c.post("/api/v1/attachments", json={"name": "x", "content": "a,b\n"}).status_code == 422
+    assert c.post("/api/v1/attachments/att_nope/apply", json={
+        "scenario": {"example": "scenarios/toy_queue/mmc_baseline.yaml"},
+        "source": {"kind": "samples", "columns": {"value": "v"}}}).status_code == 404  # fmt: skip

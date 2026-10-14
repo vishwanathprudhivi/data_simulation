@@ -3,6 +3,7 @@
 export type { Behaviors } from "./behaviors";
 export type { CapabilityManifest } from "./capability_manifest";
 export type { ChartSpec } from "./chart_spec";
+export type { DataMapping } from "./data_mapping";
 export type { DimensionCatalog } from "./dimension_catalog";
 export type { DomainDefinition } from "./domain_definition";
 export type { Experiment } from "./experiment";

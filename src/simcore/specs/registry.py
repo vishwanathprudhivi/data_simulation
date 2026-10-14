@@ -22,6 +22,7 @@ from simcore.specs.edit import ScenarioEdit
 from simcore.specs.experiment import ExperimentSpec
 from simcore.specs.facility import FacilityManifest
 from simcore.specs.findings import Findings
+from simcore.specs.mapping import DataMappingSpec
 from simcore.specs.plan import PlanSpec
 from simcore.specs.query import QuerySpec
 from simcore.specs.scenario import ScenarioSpec
@@ -44,6 +45,7 @@ SPECS: dict[str, type[BaseModel]] = {
     "findings": Findings,
     "plan": PlanSpec,
     "scenario_edit": ScenarioEdit,
+    "data_mapping": DataMappingSpec,
 }
 
 
