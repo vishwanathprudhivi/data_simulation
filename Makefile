@@ -8,7 +8,7 @@ BIN    := $(VENV)/bin
 setup:
 	$(PYTHON) -m venv $(VENV)
 	$(BIN)/pip install --upgrade pip
-	$(BIN)/pip install -e ".[dev,redis,service]"
+	$(BIN)/pip install -e ".[dev,redis,service,report]"
 	-$(BIN)/pre-commit install 2>/dev/null || true
 
 lint:
