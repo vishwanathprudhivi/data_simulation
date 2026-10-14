@@ -69,6 +69,15 @@ def validate(path: Path, kind: str | None, plugins: tuple[str, ...]) -> None:
 
             _, bundle = load_experiment(path)
             _plugins(plugins).get(bundle.scenario.domain).validate_scenario(bundle)
+        elif kind == "facility":
+            from simcore.core.facility.validate import validate_facility
+
+            manifest = validate_spec(SPECS[kind], doc, str(path))
+            found = validate_facility(manifest)  # type: ignore[arg-type]
+            for issue in found:
+                click.echo(str(issue), err=True)
+            if any(i.severity == "error" for i in found):
+                sys.exit(1)
         else:
             validate_spec(SPECS[kind], doc, str(path))
     except (ConfigError, Exception) as exc:

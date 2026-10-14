@@ -1,0 +1,6 @@
+# Same shift on a layout with 1.7 m aisles: two 0.8 m jacks can no longer pass
+# (0.8 + 0.8 + 0.2 m clearance > 1.7 m), so congestion emerges from geometry.
+id: wh_narrow_aisles
+name: Baseline on narrow (single-lane) aisles
+extends: baseline.yaml
+facility: ../../facilities/warehouse_dc_narrow.yaml

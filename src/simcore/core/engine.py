@@ -21,7 +21,9 @@ from simcore.core.bus import EventBus
 from simcore.core.clock import SimClock
 from simcore.core.config import ScenarioBundle, load_scenario
 from simcore.core.dispatch.queue import InMemoryQueue, TaskQueue
+from simcore.core.facility.graph import NavGraph
 from simcore.core.hashing import canonical_json
+from simcore.core.interaction.kpis import InteractionKpis
 from simcore.core.model import SimContext, SimModel, SimulationError
 from simcore.core.obs.eventlog import EventLog, EventType
 from simcore.core.obs.kpi import KpiContext, KpiRegistry, core_kpi_calculators
@@ -170,6 +172,7 @@ class Engine:
             queue=self.queue_factory(),
             backend=self.backend,
             params=self.params,
+            nav=NavGraph(self.bundle.facility) if self.bundle.facility is not None else None,
         )
         self.ctx.emit(
             EventType.SIM_START,
@@ -250,7 +253,9 @@ class Engine:
 
     def kpi_registry(self) -> KpiRegistry:
         assert self.plugin is not None
-        return KpiRegistry([*core_kpi_calculators(), *self.plugin.kpi_calculators()])
+        return KpiRegistry(
+            [*core_kpi_calculators(), InteractionKpis(), *self.plugin.kpi_calculators()]
+        )
 
     def collect(self) -> RunResult:
         self._require("ran")
@@ -269,6 +274,11 @@ class Engine:
             "git_sha": git_sha(),
             "domain": {"name": self.plugin.name, "version": self.plugin.version},
             "scenario": {"id": scenario.id, "name": scenario.name, "source": self.bundle.source},
+            "facility": (
+                {"id": self.bundle.facility.id, "version": self.bundle.facility.version}
+                if self.bundle.facility is not None
+                else None
+            ),
             "config_hashes": dict(self.bundle.hashes),
             "config_hash": self.bundle.config_hash,
             "seeds": self.ctx.rng.describe(),

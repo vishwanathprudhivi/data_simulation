@@ -6,15 +6,18 @@ from typing import Annotated, Any, Literal
 
 from pydantic import Field, model_validator
 
-from simcore.specs.common import Duration, Identifier, SchemaVersion, SpecModel
+from simcore.specs.common import Duration, Identifier, Length, SchemaVersion, SpecModel
 from simcore.specs.distributions import DistributionSpec
 
 __all__ = [
     "CORE_DISRUPTION_TYPES",
     "BeatSpec",
+    "ColocationSpec",
+    "DeadlockSpec",
     "DemandSpec",
     "DisruptionSpec",
     "FleetEntry",
+    "InteractionSpec",
     "ListDemand",
     "PolicyRef",
     "ReplayDemand",
@@ -133,6 +136,46 @@ class DisruptionSpec(SpecModel):
         return self
 
 
+class ColocationSpec(SpecModel):
+    """Service-time penalty when several agents work the same group (FR-INT-04)."""
+
+    group_attribute: str = Field(
+        default="colocation_group",
+        description="Location attribute naming the co-location group; defaults to the location.",
+    )
+    penalty_per_agent: float = Field(
+        default=0.0, ge=0, description="Service time x (1 + penalty x other agents in group)."
+    )
+
+
+class DeadlockSpec(SpecModel):
+    """Deadlock resolution (FR-INT-07)."""
+
+    strategy: Literal["priority_yield", "reroute", "timeout", "none"] = "priority_yield"
+    timeout: Duration = Field(default=30.0, description="Wait before yielding ('timeout').")
+
+
+class InteractionSpec(SpecModel):
+    """Parameters of the geometry-derived interaction model (FR-INT-02/05).
+
+    All are calibratable (``simcore.experiment.calibration``).
+    """
+
+    model: str = "geometric"
+    clearance: Length = Field(default=0.2, description="Lateral gap needed between agents (m).")
+    passing_speed_factor: float = Field(default=0.6, gt=0, le=1)
+    density_alpha: float = Field(
+        default=0.5, ge=0, description="Speed loss per unit of edge width occupied by others."
+    )
+    min_speed_factor: float = Field(default=0.2, gt=0, le=1)
+    headway: Duration | None = Field(
+        default=None,
+        description="Minimum exit gap behind a leader in one lane; default footprint/speed.",
+    )
+    colocation: ColocationSpec = Field(default_factory=ColocationSpec)
+    deadlock: DeadlockSpec = Field(default_factory=DeadlockSpec)
+
+
 class BeatSpec(SpecModel):
     """Scripted demo beat (FR-SCN-06)."""
 
@@ -166,6 +209,7 @@ class ScenarioSpec(SpecModel):
     params: dict[str, Any] = Field(
         default_factory=dict, description="Domain parameters (validated by the domain plug-in)."
     )
+    interaction: InteractionSpec = Field(default_factory=InteractionSpec)
     beats: list[BeatSpec] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
 

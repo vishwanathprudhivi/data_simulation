@@ -1,5 +1,52 @@
 # Changelog
 
+## M3 – Facility + interaction (2026-10-14)
+
+**Exit gate:** AC-FAC-01, AC-INT-01, AC-INT-02 — passing. AC-ENG-01/02 re-run on the
+warehouse reference scenario — passing. NFR-02: the 4 h reference shift runs in
+about 1 s in `logical` mode (> 7,000x real time; gate 500x).
+
+Requirements implemented:
+- FR-FAC-01/02/03/05/07: manifest + `NavGraph` (Dijkstra, deterministic ties,
+  derived lengths, corridor chains), immutable manifest with an event-only overlay
+  (blocked edges, speed factors); facility id/version and hash in run metadata.
+- FR-FAC-04: validator (dangling refs, connectivity incl. one-way traps, zero
+  width/length, length vs geometry, overlapping zones, mixed dimensions,
+  capacities) wired into `simcore validate` and scenario validation; scenario
+  references to unknown places are config errors.
+- FR-FAC-06: `corridor_layout` generator (domain-agnostic) and
+  `domains.warehouse.layout.warehouse_layout`.
+- FR-INT-01..04/06/07: occupancy, geometric `InteractionModel` (lanes, passing,
+  density, passing factor), blocking events (opposing, following, space,
+  no_route), corridor reservation with fairness, deadlock detection and four
+  resolution strategies, location capacity/queueing, co-location penalties,
+  stationary edge occupancy, congestion KPIs (blocked time by kind, edge
+  utilization, travel distance, co-location time, deadlocks).
+- FR-INT-05: grid calibration utility (`simcore.experiment.calibration`).
+- FR-SCN-03 facility disruptions: location_blocked / location_degraded /
+  capacity_change.
+- FR-AGT-05: capability matching (`task.attributes.requires`) in all built-in
+  policies and validated in dispatch.
+- Warehouse domain (BRD 9): triple pallet jacks (<= 3 pallets/trip, loaded vs empty
+  speed) and selectors; pick -> stage flow; zone/time speed re-timing; dock door
+  closure; KPIs pallets per labor hour, travel distance per pallet, bay
+  co-location time, dock on-time rate. Synthetic order history (606 orders, 4
+  waves), 2.0 m and 1.7 m aisle layouts, scenarios for baseline, disruptions,
+  stochastic demand with surge, speed re-timing, narrow aisles; experiments for
+  the 10-30 fleet sweep and speed re-timing.
+
+Observed (narrow aisles, seed 7): mean cycle time falls from 832 s (10 jacks) to
+446 s (30 jacks) with diminishing returns; all 606 orders complete; deadlocks
+(~200 per shift, at junctions) are all resolved.
+
+Decisions: ADR-007 (movement/interaction); ADR-004 superseded.
+Schema: `ScenarioSpec.interaction` added (optional, defaults keep old documents
+valid; schema_version stays 1.0).
+
+Known issues / deferrals: speeds are fixed at edge entry (no mid-edge re-timing);
+the co-location penalty is applied at service start only; FR-AGT-03/07 still
+deferred.
+
 ## M2 – Experiment layer (2026-10-14)
 
 **Exit gate:** AC-EXP-03, AC-EXP-04, AC-IFC-01 (logical) — all passing.

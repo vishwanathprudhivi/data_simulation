@@ -10,7 +10,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
 MMC = EXAMPLES / "scenarios" / "toy_queue" / "mmc_baseline.yaml"
-WAREHOUSE_STUB = EXAMPLES / "scenarios" / "warehouse_stub" / "shift.yaml"
+WAREHOUSE = EXAMPLES / "scenarios" / "warehouse" / "baseline.yaml"
 
 
 class NetworkBlockedError(RuntimeError):
@@ -41,8 +41,8 @@ def mmc_path() -> Path:
 
 
 @pytest.fixture
-def warehouse_stub_path() -> Path:
-    return WAREHOUSE_STUB
+def warehouse_path() -> Path:
+    return WAREHOUSE
 
 
 @pytest.fixture

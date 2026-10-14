@@ -17,7 +17,8 @@ edges:
   - {id: e_a1, from: n_a1_s, to: n_a1_n, width: 2.4 m, zone: aisle_1}
   - {id: e_a2, from: n_a2_s, to: n_a2_n, width: 2.4 m, directed: true, zone: aisle_2}
   - {id: e_cross, from: n_a1_s, to: n_a2_s, width: 3 m}
-  - {id: e_stage, from: n_stage, to: n_a1_s, width: 3 m, length: 4.5}
+  - {id: e_cross_n, from: n_a2_n, to: n_a1_n, width: 3 m, directed: true}
+  - {id: e_stage, from: n_stage, to: n_a1_s, width: 3 m, length: 4.3}
 locations:
   - {id: pick_A, kind: pick_face, node: n_a1_n, zone: aisle_1}
   - {id: pick_B, kind: pick_face, node: n_a2_n, zone: aisle_2}

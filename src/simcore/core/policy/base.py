@@ -28,6 +28,7 @@ __all__ = [
     "PolicyFactory",
     "TaskView",
     "ZoneAffinityPolicy",
+    "compatible",
     "make_policy",
 ]
 
@@ -44,6 +45,7 @@ class AgentView:
     type: str
     position: Position | None = None
     attributes: Mapping[str, Any] = field(default_factory=dict)
+    capabilities: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,12 @@ class TaskView:
     destination: str | None = None
     origin_position: Position | None = None
     attributes: Mapping[str, Any] = field(default_factory=dict)
+    requires: str | None = None
+
+
+def compatible(agent: AgentView, task: TaskView) -> bool:
+    """A task with ``requires`` needs that capability on the agent (FR-AGT-05)."""
+    return task.requires is None or task.requires in agent.capabilities
 
 
 @dataclass(frozen=True)
@@ -107,9 +115,13 @@ class Policy(ABC):
 
 
 def _greedy(
-    obs: DispatchObservation, score: Callable[[AgentView, TaskView], float]
+    obs: DispatchObservation, base_score: Callable[[AgentView, TaskView], float]
 ) -> DispatchAction:
     """Greedy matching in trigger order; ties broken by observation order."""
+
+    def score(agent: AgentView, task: TaskView) -> float:
+        return base_score(agent, task) if compatible(agent, task) else math.inf
+
     out: list[Assignment] = []
     if obs.trigger == "pull":
         free = list(obs.tasks)
@@ -138,9 +150,7 @@ class FifoPolicy(Policy):
     name = "fifo"
 
     def decide(self, observation: DispatchObservation) -> DispatchAction:
-        return DispatchAction(
-            tuple(Assignment(a.id, t.id) for a, t in zip(observation.agents, observation.tasks))
-        )
+        return _greedy(observation, lambda a, t: 0.0)
 
 
 class NearestTaskPolicy(Policy):

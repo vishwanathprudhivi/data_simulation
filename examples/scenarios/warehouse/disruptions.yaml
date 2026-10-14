@@ -1,0 +1,21 @@
+# BRD 9 example 4: aisle blocked mid-shift, labor shortfall, dock door closure.
+id: wh_disruptions
+name: Baseline with mid-shift disruptions
+extends: baseline.yaml
+disruptions:
+  - id: aisle_02_blocked
+    type: location_blocked
+    target: zone:aisle_02
+    at: 90 min
+    duration: 30 min
+  - id: labor_shortfall
+    type: resource_unavailable
+    target: type:pallet_jack_operator
+    at: 2 h
+    duration: 45 min
+    params: {count: 3}
+  - id: door_1_closed
+    type: dock_door_closed
+    target: door_01
+    at: 3 h
+    duration: 20 min

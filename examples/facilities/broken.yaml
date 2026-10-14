@@ -1,0 +1,21 @@
+# Deliberately broken facility for AC-FAC-01: `simcore validate` must flag
+# (1) a zero-width aisle and (2) a zone that is disconnected from the rest.
+schema_version: "1.0"
+id: broken
+zones:
+  - {id: main, kind: aisle, polygon: [[0, -1], [20, -1], [20, 1], [0, 1]]}
+  - {id: island, kind: storage, polygon: [[40, -1], [50, -1], [50, 1], [40, 1]]}
+nodes:
+  - {id: a, position: [0, 0], zone: main}
+  - {id: b, position: [10, 0], zone: main}
+  - {id: c, position: [20, 0], zone: main}
+  - {id: d, position: [40, 0], zone: island}
+  - {id: e, position: [50, 0], zone: island}
+edges:
+  - {id: ab, from: a, to: b, width: 2.4}
+  - {id: bc, from: b, to: c, width: 0}
+  - {id: de, from: d, to: e, width: 2.4}
+locations:
+  - {id: start, kind: pick_face, node: a}
+  - {id: far, kind: pick_face, node: c}
+  - {id: isle, kind: pick_face, node: e}

@@ -39,6 +39,27 @@
       "title": "BeatSpec",
       "type": "object"
     },
+    "ColocationSpec": {
+      "additionalProperties": false,
+      "description": "Service-time penalty when several agents work the same group (FR-INT-04).",
+      "properties": {
+        "group_attribute": {
+          "default": "colocation_group",
+          "description": "Location attribute naming the co-location group; defaults to the location.",
+          "title": "Group Attribute",
+          "type": "string"
+        },
+        "penalty_per_agent": {
+          "default": 0.0,
+          "description": "Service time x (1 + penalty x other agents in group).",
+          "minimum": 0,
+          "title": "Penalty Per Agent",
+          "type": "number"
+        }
+      },
+      "title": "ColocationSpec",
+      "type": "object"
+    },
     "ConstantDist": {
       "additionalProperties": false,
       "properties": {
@@ -70,6 +91,39 @@
         "value"
       ],
       "title": "ConstantDist",
+      "type": "object"
+    },
+    "DeadlockSpec": {
+      "additionalProperties": false,
+      "description": "Deadlock resolution (FR-INT-07).",
+      "properties": {
+        "strategy": {
+          "default": "priority_yield",
+          "enum": [
+            "priority_yield",
+            "reroute",
+            "timeout",
+            "none"
+          ],
+          "title": "Strategy",
+          "type": "string"
+        },
+        "timeout": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 30.0,
+          "description": "Wait before yielding ('timeout').",
+          "title": "Timeout"
+        }
+      },
+      "title": "DeadlockSpec",
       "type": "object"
     },
     "DisruptionSpec": {
@@ -321,6 +375,82 @@
         "scale"
       ],
       "title": "GammaDist",
+      "type": "object"
+    },
+    "InteractionSpec": {
+      "additionalProperties": false,
+      "description": "Parameters of the geometry-derived interaction model (FR-INT-02/05).\n\nAll are calibratable (``simcore.experiment.calibration``).",
+      "properties": {
+        "clearance": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 0.2,
+          "description": "Lateral gap needed between agents (m).",
+          "title": "Clearance"
+        },
+        "colocation": {
+          "$ref": "#/$defs/ColocationSpec"
+        },
+        "deadlock": {
+          "$ref": "#/$defs/DeadlockSpec"
+        },
+        "density_alpha": {
+          "default": 0.5,
+          "description": "Speed loss per unit of edge width occupied by others.",
+          "minimum": 0,
+          "title": "Density Alpha",
+          "type": "number"
+        },
+        "headway": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum exit gap behind a leader in one lane; default footprint/speed.",
+          "title": "Headway"
+        },
+        "min_speed_factor": {
+          "default": 0.2,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Min Speed Factor",
+          "type": "number"
+        },
+        "model": {
+          "default": "geometric",
+          "title": "Model",
+          "type": "string"
+        },
+        "passing_speed_factor": {
+          "default": 0.6,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Passing Speed Factor",
+          "type": "number"
+        }
+      },
+      "title": "InteractionSpec",
       "type": "object"
     },
     "ListDemand": {
@@ -1162,6 +1292,9 @@
       "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
       "title": "Id",
       "type": "string"
+    },
+    "interaction": {
+      "$ref": "#/$defs/InteractionSpec"
     },
     "name": {
       "default": "",

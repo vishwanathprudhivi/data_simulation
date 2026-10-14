@@ -13,7 +13,7 @@ from simcore.api import default_engine, run_scenario
 from simcore.cli.main import cli
 from simcore.core.engine import EngineStateError
 from simcore.core.obs.eventlog import EventLog, EventType
-from tests.conftest import MMC, WAREHOUSE_STUB
+from tests.conftest import MMC, WAREHOUSE
 
 
 def test_FR_ENG_01_lifecycle_order_enforced() -> None:
@@ -105,7 +105,7 @@ def test_FR_OBS_04_event_log_round_trips_through_parquet(tmp_path: Path) -> None
 
 
 def test_FR_OBS_01_event_log_contains_lifecycle_types() -> None:
-    types = {r.type for r in run_scenario(WAREHOUSE_STUB).events}
+    types = {r.type for r in run_scenario(WAREHOUSE.with_name("disruptions.yaml")).events}
     for t in (
         EventType.SIM_START,
         EventType.SIM_END,

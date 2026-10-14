@@ -15,7 +15,8 @@ onboarding kit.
 | M0 Foundations | done |
 | M1 Logical core | done |
 | M2 Experiment layer | done |
-| M3 – M14 | not started |
+| M3 Facility + interaction (warehouse domain) | done |
+| M4 – M14 | in progress |
 
 ## Quick start
 
@@ -28,6 +29,11 @@ make lint test                  # ruff, mypy, import-linter; tests (no GPU/Redis
 # -> runs/adhoc/mmc_baseline/rep_000/{events.parquet,kpis.json,meta.json}
 .venv/bin/simcore run examples/scenarios/toy_queue/mmc_baseline.yaml --set fleet.server.count=4
 .venv/bin/simcore domains list
+
+# warehouse reference domain (geometry-derived congestion)
+.venv/bin/simcore validate examples/facilities/broken.yaml          # shows actionable errors
+.venv/bin/simcore run examples/scenarios/warehouse/narrow_aisles.yaml
+.venv/bin/simcore experiment examples/experiments/warehouse_fleet_sweep.yaml --out runs
 
 # experiments: baseline + variants x replications with CRN, CIs and a report
 .venv/bin/simcore experiment examples/experiments/mmc_servers.yaml --out runs --parallel 4

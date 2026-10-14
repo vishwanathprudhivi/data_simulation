@@ -31,6 +31,7 @@ __all__ = [
     "PluginError",
     "PluginManifest",
     "PluginRegistry",
+    "facility_issues",
 ]
 
 ENTRY_POINT_GROUP = "simcore.domains"
@@ -161,6 +162,7 @@ class DomainPlugin(ABC):
                     f"use one of {sorted(policies)}",
                 )
             )
+        issues.extend(facility_issues(bundle))
         try:
             params = self.validate_params(bundle)
         except ConfigError as exc:
@@ -183,6 +185,47 @@ class DomainPlugin(ABC):
             params_schema=params.model_json_schema() if params is not None else None,
             has_domain_definition=self.domain_definition() is not None,
         )
+
+
+def facility_issues(bundle: ScenarioBundle) -> list[ConfigIssue]:
+    """Facility errors plus scenario references to unknown places (FR-FAC-04, FR-ENG-08)."""
+    from simcore.core.facility.validate import validate_facility
+
+    fac = bundle.facility
+    if fac is None:
+        return []
+    source = bundle.scenario.facility or bundle.source
+    out = [
+        ConfigIssue(source, i.where, f"{i.code}: {i.message}", i.hint)
+        for i in validate_facility(fac)
+        if i.severity == "error"
+    ]
+    places = {loc.id for loc in fac.locations} | {n.id for n in fac.nodes}
+    for n, src in enumerate(bundle.scenario.demand):
+        for key in ("origins", "destinations"):
+            for place in getattr(src, key, []) or []:
+                if place not in places:
+                    out.append(
+                        ConfigIssue(
+                            bundle.source,
+                            f"demand.{n}.{key}",
+                            f"{place!r} is not a location or node of facility {fac.id!r}",
+                            "use an id from the facility manifest",
+                        )
+                    )
+    for n, entry in enumerate(bundle.scenario.fleet):
+        start = entry.attributes.get("start")
+        for place in start if isinstance(start, list) else [start] if start else []:
+            if place not in places:
+                out.append(
+                    ConfigIssue(
+                        bundle.source,
+                        f"fleet.{n}.attributes.start",
+                        f"start {place!r} is not in facility {fac.id!r}",
+                        "use a location or node id",
+                    )
+                )
+    return out
 
 
 class PluginRegistry:

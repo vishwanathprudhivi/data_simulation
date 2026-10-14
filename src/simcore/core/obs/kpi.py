@@ -26,7 +26,7 @@ __all__ = [
 #: Agent states that count as not working.
 IDLE_STATES: frozenset[str] = frozenset({"idle"})
 #: Agent states during which an agent is not available at all (excluded from utilization).
-AVAILABLE_EXCLUDED_STATES: frozenset[str] = frozenset({"unavailable", "off_shift"})
+AVAILABLE_EXCLUDED_STATES: frozenset[str] = frozenset({"unavailable", "off_shift", "failed"})
 
 
 @dataclass(frozen=True)

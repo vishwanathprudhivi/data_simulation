@@ -24,6 +24,8 @@ from simcore.core.config import ScenarioBundle
 from simcore.core.demand import ARRIVAL, Arrival, DemandSource, make_source
 from simcore.core.dispatch.queue import TaskQueue
 from simcore.core.dispatch.task import Task
+from simcore.core.facility.graph import Edge, NavGraph
+from simcore.core.interaction import INTERACTION_MODELS, MovementSystem, ServiceSystem
 from simcore.core.obs.eventlog import EventLog, EventType
 from simcore.core.policy.base import (
     AgentView,
@@ -33,6 +35,7 @@ from simcore.core.policy.base import (
     PolicyError,
     PolicyFactory,
     TaskView,
+    compatible,
     make_policy,
 )
 from simcore.core.registry import Entity, EntityRegistry
@@ -71,6 +74,7 @@ class SimContext:
     queue: TaskQueue
     backend: WorldBackend
     params: BaseModel | None = None
+    nav: NavGraph | None = None
 
     @property
     def now(self) -> float:
@@ -212,6 +216,17 @@ class DispatchingModel(SimModel):
         bus.subscribe("activity.done", self._on_activity_done)
         bus.subscribe("disruption.begin", self._on_disruption_begin)
         bus.subscribe("disruption.finish", self._on_disruption_finish)
+        self.movement: MovementSystem | None = None
+        self.services: ServiceSystem | None = None
+        if ctx.nav is not None:
+            spec = self.bundle.scenario.interaction
+            model_cls = INTERACTION_MODELS.get(spec.model)
+            if model_cls is None:
+                raise SimulationError(
+                    f"unknown interaction model {spec.model!r}; known: {sorted(INTERACTION_MODELS)}"
+                )
+            self.movement = MovementSystem(ctx, ctx.nav, spec, model_cls(spec), self)
+            self.services = ServiceSystem(ctx, ctx.nav, spec.colocation, self.movement)
         self.create_agents(ctx)
         for source in self.sources:
             source.start(ctx)
@@ -230,7 +245,12 @@ class DispatchingModel(SimModel):
             for i in range(entry.count):
                 agent_id = f"{entry.agent_type}-{i:03d}"
                 attrs = {**(spec.attributes if spec else {}), **entry.attributes}
-                position = self.initial_position(ctx, entry.agent_type, i)
+                start = self.start_place(ctx, entry.agent_type, i, attrs)
+                position = (
+                    ctx.nav.position(start)
+                    if ctx.nav is not None and start is not None
+                    else self.initial_position(ctx, entry.agent_type, i)
+                )
                 entity = ctx.registry.add(
                     Entity(
                         agent_id,
@@ -243,6 +263,8 @@ class DispatchingModel(SimModel):
                 mult = mult_sampler(speed_rng) if mult_sampler else 1.0
                 agent = AgentRuntime(entity, spec, speed_multiplier=mult)
                 self.agents[agent_id] = agent
+                if self.movement is not None and start is not None:
+                    self.movement.place(agent, start)
                 ctx.backend.spawn_agent(agent_id, entry.agent_type, position)
                 ctx.emit(
                     EventType.AGENT_CREATED,
@@ -253,8 +275,66 @@ class DispatchingModel(SimModel):
                 ctx.emit(EventType.AGENT_STATE, agent=agent_id, state="idle")
 
     def initial_position(self, ctx: SimContext, agent_type: str, index: int) -> Position | None:
-        """Override to place agents; default: no position."""
+        """Override to place agents without a facility; default: no position."""
         return None
+
+    def start_place(
+        self, ctx: SimContext, agent_type: str, index: int, attributes: Mapping[str, Any]
+    ) -> str | None:
+        """Where an agent starts on the facility: fleet/behavior attribute ``start``
+        (a location or node; a list is used round-robin), else the first location."""
+        if ctx.nav is None:
+            return None
+        start = attributes.get("start")
+        if isinstance(start, list) and start:
+            return str(start[index % len(start)])
+        if start is not None:
+            return str(start)
+        if ctx.nav.locations:
+            return next(iter(ctx.nav.locations))
+        return next(iter(ctx.nav.positions))
+
+    # ------------------------------------------------------------------ facility helpers
+
+    def go(
+        self,
+        agent: AgentRuntime,
+        place: str,
+        then: Callable[[], None],
+        profile: str = "default",
+    ) -> None:
+        """Travel to ``place`` over the navigation graph, then call ``then``."""
+        if self.movement is None:
+            raise SimulationError("scenario has no facility; travel needs a navigation graph")
+        self.movement.travel(agent, place, profile, then)
+
+    def work(
+        self,
+        agent: AgentRuntime,
+        location: str,
+        duration: float,
+        then: Callable[[], None],
+        state: str = "service",
+    ) -> None:
+        """Work at ``location`` honouring capacity and co-location penalties."""
+        if self.services is None:
+            raise SimulationError("scenario has no facility; location work needs one")
+        self.services.serve(agent, location, duration, then, state)
+
+    def speed_modifier(self, agent: AgentRuntime, edge: Edge, time: float) -> float:
+        """Hook: multiply an agent's speed on ``edge`` at ``time`` (e.g. zone retiming)."""
+        return 1.0
+
+    def on_agent_failed(self, agent: AgentRuntime, reason: str) -> None:
+        """An agent was removed (e.g. unresolved deadlock): requeue its task."""
+        ctx = self.ctx
+        agent.unavailable += 1
+        task = agent.task
+        if task is not None:
+            ctx.queue.requeue(task.id)
+            ctx.emit(EventType.TASK_REQUEUED, agent=agent.id, task=task.id, reason=reason)
+            agent.task = None
+        self.request_dispatch()
 
     # ------------------------------------------------------------------ hooks for subclasses
 
@@ -263,7 +343,12 @@ class DispatchingModel(SimModel):
         """Begin executing ``task`` with ``agent``; eventually call :meth:`complete_task`."""
 
     def task_position(self, ctx: SimContext, task: Task) -> Position | None:
-        """Position of a task's origin for distance-aware policies; default none."""
+        """Position of a task's origin (from the facility when there is one)."""
+        if ctx.nav is not None and task.origin is not None:
+            try:
+                return ctx.nav.position(task.origin)
+            except KeyError:
+                return None
         return None
 
     def on_disruption(self, ctx: SimContext, spec: DisruptionSpec, active: bool) -> None:
@@ -371,6 +456,7 @@ class DispatchingModel(SimModel):
                 a.type,
                 ctx.backend.position(a.id, ctx.now) or a.entity.position,
                 a.entity.attributes,
+                tuple(a.spec.capabilities) if a.spec is not None else (),
             )
             for a in self.agents.values()
             if a.free
@@ -386,6 +472,7 @@ class DispatchingModel(SimModel):
                 t.destination,
                 self.task_position(ctx, t),
                 t.attributes,
+                t.attributes.get("requires"),
             )
             for t in ctx.queue.pending()
         )
@@ -404,6 +491,17 @@ class DispatchingModel(SimModel):
         free_agents = {a.id for a in obs.agents}
         pending = {t.id for t in obs.tasks}
         for a in action.assignments:
+            agent_view = next((v for v in obs.agents if v.id == a.agent_id), None)
+            task_view = next((v for v in obs.tasks if v.id == a.task_id), None)
+            if (
+                agent_view is not None
+                and task_view is not None
+                and not compatible(agent_view, task_view)
+            ):
+                raise PolicyError(
+                    f"policy {self.policy.name!r} assigned {a.task_id} (requires "
+                    f"{task_view.requires!r}) to {a.agent_id} which lacks that capability"
+                )
             if a.agent_id not in free_agents or a.task_id not in pending:
                 raise PolicyError(
                     f"policy {self.policy.name!r} returned invalid assignment "
@@ -503,6 +601,8 @@ class DispatchingModel(SimModel):
                     source.rate_factor = (
                         source.rate_factor * factor if active else (source.rate_factor / factor)
                     )
+        elif spec.type in ("location_blocked", "location_degraded", "capacity_change"):
+            self._facility_disruption(ctx, spec, active)
         elif spec.type == "speed_change":
             factor = float(spec.params.get("factor", 1.0))
             for agent in self._targets(ctx, spec):
@@ -510,3 +610,33 @@ class DispatchingModel(SimModel):
                     agent.speed_factor * factor if active else (agent.speed_factor / factor)
                 )
         self.on_disruption(ctx, spec, active)
+
+    def _facility_disruption(self, ctx: SimContext, spec: DisruptionSpec, active: bool) -> None:
+        nav = ctx.nav
+        if nav is None or spec.target is None:
+            ctx.emit(
+                EventType.WARNING,
+                message=f"disruption {spec.id} ({spec.type}) needs a "
+                "facility and a target; ignored",
+            )
+            return
+        is_location = spec.target in nav.locations
+        if spec.type == "location_blocked":
+            if is_location and self.services is not None:
+                self.services.set_capacity(spec.target, 0 if active else None)
+            else:
+                nav.block(nav.edges_for(spec.target), active)
+        elif spec.type == "location_degraded":
+            factor = float(spec.params.get("factor", 0.5))
+            if factor <= 0:
+                raise SimulationError(f"disruption {spec.id}: factor must be > 0")
+            nav.degrade(nav.edges_for(spec.target), factor, active)
+        elif spec.type == "capacity_change" and self.services is not None:
+            cap = spec.params.get("capacity")
+            if cap is None:
+                raise SimulationError(
+                    f"disruption {spec.id}: capacity_change needs params.capacity"
+                )
+            self.services.set_capacity(spec.target, int(cap) if active else None)
+        if self.movement is not None:
+            self.movement.graph_changed()

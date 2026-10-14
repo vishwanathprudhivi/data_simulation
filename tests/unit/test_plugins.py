@@ -10,7 +10,7 @@ from domains.toy_queue import ToyQueuePlugin
 from simcore.api import run_scenario
 from simcore.core.config import ConfigError, load_scenario
 from simcore.core.plugins import DomainPlugin, PluginError, PluginRegistry
-from tests.conftest import MMC, WAREHOUSE_STUB
+from tests.conftest import MMC, WAREHOUSE
 
 
 def test_FR_ENG_05_entry_point_discovery(plugins: PluginRegistry) -> None:
@@ -25,10 +25,10 @@ def test_FR_ENG_05_entry_point_discovery(plugins: PluginRegistry) -> None:
 
 def test_AC_ENG_03_two_domains_load_and_run_in_one_process(plugins: PluginRegistry) -> None:
     toy = run_scenario(MMC, plugins=plugins)
-    wh = run_scenario(WAREHOUSE_STUB, plugins=plugins)
+    wh = run_scenario(WAREHOUSE, plugins=plugins)
     toy_again = run_scenario(MMC, plugins=plugins)
     assert "number_in_system_mean" in toy.kpis and "number_in_system_mean" not in wh.kpis
-    assert "pallets_staged_per_hour" in wh.kpis and "pallets_staged_per_hour" not in toy.kpis
+    assert "pallets_per_labor_hour" in wh.kpis and "pallets_per_labor_hour" not in toy.kpis
     assert toy.kpis == toy_again.kpis  # running another domain in between changes nothing
 
 

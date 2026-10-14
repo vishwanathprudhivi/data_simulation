@@ -31,11 +31,15 @@ SCHEMA_DIR = ROOT / "schemas"
 SAMPLES: list[tuple[str, Path]] = [
     ("scenario", EXAMPLES / "scenarios/toy_queue/mmc_baseline.yaml"),
     ("scenario", EXAMPLES / "scenarios/toy_queue/mmc_four_servers.yaml"),
-    ("scenario", EXAMPLES / "scenarios/warehouse_stub/shift.yaml"),
+    *[
+        ("scenario", p)
+        for p in sorted((EXAMPLES / "scenarios/warehouse").glob("*.yaml"))
+        if p.name != "behaviors.yaml"
+    ],
     ("behaviors", EXAMPLES / "scenarios/toy_queue/behaviors.yaml"),
-    ("behaviors", EXAMPLES / "scenarios/warehouse_stub/behaviors.yaml"),
-    ("facility", EXAMPLES / "facilities/two_aisle.yaml"),
-    ("experiment", EXAMPLES / "experiments/mmc_servers.yaml"),
+    ("behaviors", EXAMPLES / "scenarios/warehouse/behaviors.yaml"),
+    *[("facility", p) for p in sorted((EXAMPLES / "facilities").glob("*.yaml"))],
+    *[("experiment", p) for p in sorted((EXAMPLES / "experiments").glob("*.yaml"))],
     ("domain_definition", ROOT / "domains/toy_queue/domain.yaml"),
 ]
 

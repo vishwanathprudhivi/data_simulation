@@ -1,0 +1,11 @@
+# BRD 9 example 3: slow jacks in the two busiest aisles during the first wave peak
+# to spread arrivals at bays and reduce co-location.
+id: wh_speed_retiming
+name: Speed re-timing in aisles 1-2
+extends: baseline.yaml
+params:
+  speed_windows:
+    - zones: [aisle_01, aisle_02]
+      start: 0
+      end: 1 h
+      factor: 0.8
