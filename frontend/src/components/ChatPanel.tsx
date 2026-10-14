@@ -26,7 +26,11 @@ export function ChatPanel() {
       .catch((e) => setError(String(e)));
   }, [s.scenarioRef]);
 
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [turns, busy]);
+  useEffect(() => {
+    // braces matter: newer browsers return a Promise from scrollIntoView, and an
+    // effect must return nothing or a cleanup function
+    end.current?.scrollIntoView({ block: "end" });
+  }, [turns, busy]);
 
   const send = async (msg: string) => {
     if (!session || !msg.trim()) return;
