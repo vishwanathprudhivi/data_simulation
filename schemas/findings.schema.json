@@ -23,6 +23,17 @@
           "title": "Extrapolated",
           "type": "boolean"
         },
+        "fidelity": {
+          "default": "logical",
+          "description": "Mode that produced it.",
+          "enum": [
+            "logical",
+            "kinematic",
+            "physics"
+          ],
+          "title": "Fidelity",
+          "type": "string"
+        },
         "metric": {
           "title": "Metric",
           "type": "string"

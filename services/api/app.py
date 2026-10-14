@@ -167,6 +167,14 @@ class SqlRequest(BaseModel):
     max_rows: int = Field(default=1000, ge=1, le=20000)
 
 
+class CompileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=4000)
+    scenario: ScenarioRef
+    replications: int | None = Field(default=None, ge=1, le=1000)
+    mode: str = "logical"
+
+
 class AnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str | None = None
@@ -189,6 +197,9 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
     else:
         broker = InProcessBroker(settings.cpu_workers, settings.gpu_workers)
     jobs = JobService(settings, store, artifacts, plugins, broker)
+    from services.chat.llm import make_client
+
+    reasoning = make_client(settings.reasoning)
     container = Container(settings, store, artifacts, plugins, jobs)
 
     @asynccontextmanager
@@ -591,6 +602,64 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
         for r in page:
             r["data"] = json.loads(r["data"])
         return {"total": len(rows), "offset": offset, "rows": page}
+
+    # ------------------------------------------------------------------ compile & findings (M9)
+
+    @app.post(f"{API}/compile")
+    def compile_request(body: CompileRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """NL -> draft scenario card; never runs anything (FR-SCG-02/03/07/09)."""
+        from services.chat.compiler import ScenarioCompiler
+
+        base, _ = resolve(body.scenario, who)
+        plugin = plugins.get(base.scenario.domain)
+        res = ScenarioCompiler(reasoning, store).compile(
+            body.text, base, plugin, workspace=who.workspace, replications=body.replications
+        )
+        out = res.to_dict()
+        store.audit(
+            "scenario.compile",
+            user=who.user,
+            workspace=who.workspace,
+            target=base.scenario.id,
+            spec_hash=base.config_hash,
+            outcome="ok" if res.ok else "failed",
+        )
+        exp = res.compiled.experiment if res.compiled else None
+        if exp is not None:
+            p = jobs.prepare(exp, base, body.mode)
+            out["confirmation"] = {
+                "estimate": p.estimate.to_dict(),
+                "fidelity": body.mode,
+                "needs_confirmation": jobs.needs_confirmation(p),
+                "confirmation_token": jobs.confirmation_token(p, who.workspace),
+                "cached": store.cached_job(p.cache_key) is not None,
+            }
+            out["submit"] = {
+                "experiment": exp.model_dump(mode="json"),
+                "scenario": body.scenario.model_dump(mode="json", exclude_defaults=True),
+                "mode": body.mode,
+            }
+        return out
+
+    @app.get(f"{API}/jobs/{{job_id}}/findings")
+    def findings(job_id: str, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Deterministic ``Findings`` and the guarded narrative (FR-SCG-11, FR-CHAT-04)."""
+        from simcore.catalog import metric_catalog
+        from simcore.compiler import extrapolated_variants
+        from simcore.experiment.findings import narrate, synthesize_findings
+
+        job = own_job(job_id, who)
+        data = json.loads(artifacts.get_bytes(result_key(job, "summary.json")))
+        _, bundle, _ = JobService.load(job)
+        plugin = plugins.get(bundle.scenario.domain)
+        catalog = {m.id: m for m in metric_catalog(plugin).metrics}
+        flags = extrapolated_variants(data, bundle, plugin)
+        result = synthesize_findings(data, catalog, extrapolated=flags)
+        story = narrate(result, catalog)
+        return {
+            "findings": result.model_dump(mode="json"),
+            "narrative": {"text": story.text, "template": story.template, "refs": story.refs},
+        }
 
     # ------------------------------------------------------------------ semantic layer (M8)
 

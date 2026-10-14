@@ -89,6 +89,14 @@
           "title": "Statistical Treatment",
           "type": "string"
         },
+        "synonyms": {
+          "description": "Words users say for it.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Synonyms",
+          "type": "array"
+        },
         "unit": {
           "description": "SI unit symbol or '1' for dimensionless.",
           "title": "Unit",

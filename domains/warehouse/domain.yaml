@@ -2,7 +2,7 @@
 schema_version: "1.0"
 id: warehouse
 name: Warehouse outbound
-version: 0.3.0
+version: 0.3.1
 tier: 2
 plugin: domains.warehouse
 description: >-
@@ -25,6 +25,7 @@ dimensions:
 metrics:
   - id: pallets_per_labor_hour
     display_name: Pallets per labor hour
+    synonyms: [pplh, productivity, labor productivity, pallets per hour]
     description: Pallets staged per available operator hour (PPLH equivalent)
     unit: 1/h
     formula: pallets_per_labor_hour
@@ -33,6 +34,7 @@ metrics:
     format: {kind: number, decimals: 1}
   - id: travel_distance_per_pallet
     display_name: Travel distance per pallet
+    synonyms: [travel, travel distance, distance]
     unit: m
     formula: travel_distance_per_pallet
     direction: lower_is_better
@@ -48,6 +50,7 @@ metrics:
     format: {kind: duration, decimals: 0}
   - id: dock_on_time_rate
     display_name: Dock departure on-time rate
+    synonyms: [on-time, on time, otd, on-time rate, dock on-time]
     description: Share of departures (lane, due time) whose pallets were all staged in time
     unit: "1"
     formula: dock_on_time_rate
@@ -67,6 +70,7 @@ levers:
     description: Number of triple pallet jack operators on shift
     path: fleet.pallet_jack_operator.count
     type: int
+    synonyms: [jack, jacks, pallet jack, pallet jacks, operator, operators, fleet, fleet size, drivers]
     min: 1
     max: 60
     default: 12
@@ -74,6 +78,7 @@ levers:
     display_name: Dispatch policy
     path: policy.name
     type: enum
+    synonyms: [dispatch, dispatching, policy, assignment rule]
     choices: [nearest_task, fifo, zone_affinity, solver_callback]
     default: nearest_task
   - id: colocation_penalty
@@ -81,6 +86,7 @@ levers:
     description: Pick-time increase per other agent working the same bay group
     path: interaction.colocation.penalty_per_agent
     type: float
+    synonyms: [colocation, co-location, bay congestion, colocation penalty]
     min: 0
     max: 2
     default: 0.3
@@ -88,12 +94,14 @@ levers:
     display_name: Deadlock resolution
     path: interaction.deadlock.strategy
     type: enum
+    synonyms: [deadlock, deadlocks, gridlock]
     choices: [priority_yield, reroute, timeout]
     default: priority_yield
   - id: shift_length
     display_name: Shift length
     path: duration
     type: duration
+    synonyms: [shift, shift length, shift duration, hours]
     unit: s
     min: 3600
     max: 43200

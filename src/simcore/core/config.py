@@ -198,6 +198,21 @@ def apply_overrides(doc: Mapping[str, Any], overrides: Mapping[str, Any]) -> dic
     return out
 
 
+def get_path(doc: Any, path: str) -> Any:
+    """Read the value at a dotted override ``path`` (same addressing as overrides)."""
+    node = doc
+    for part in _split_path(path):
+        if isinstance(node, Mapping):
+            if part not in node:
+                raise KeyError(path)
+            node = node[part]
+        elif isinstance(node, list):
+            node = node[_list_index(node, part, path)]
+        else:
+            raise KeyError(path)
+    return node
+
+
 def _list_index(items: list[Any], part: str, path: str) -> int:
     if part.isdigit():
         idx = int(part)

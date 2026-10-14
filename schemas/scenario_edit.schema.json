@@ -1,0 +1,350 @@
+{
+  "$defs": {
+    "GoalSpec": {
+      "additionalProperties": false,
+      "description": "Goal-seeking request (FR-SCG-05), e.g. smallest fleet meeting an on-time target.",
+      "properties": {
+        "candidates": {
+          "description": "Empty: lever bounds.",
+          "items": {
+            "type": "number"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "lever": {
+          "title": "Lever",
+          "type": "string"
+        },
+        "max_runs": {
+          "default": 60,
+          "description": "Hard cap on replications.",
+          "maximum": 2000,
+          "minimum": 1,
+          "title": "Max Runs",
+          "type": "integer"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "minimize_lever": {
+          "default": true,
+          "description": "Search for the smallest value.",
+          "title": "Minimize Lever",
+          "type": "boolean"
+        },
+        "sense": {
+          "default": ">=",
+          "enum": [
+            ">=",
+            "<="
+          ],
+          "title": "Sense",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lever",
+        "metric",
+        "target"
+      ],
+      "title": "GoalSpec",
+      "type": "object"
+    },
+    "LeverChange": {
+      "additionalProperties": false,
+      "properties": {
+        "lever": {
+          "description": "Lever id from the domain's Lever Catalog.",
+          "title": "Lever",
+          "type": "string"
+        },
+        "op": {
+          "default": "set",
+          "description": "'add'/'multiply' are relative to the baseline value.",
+          "enum": [
+            "set",
+            "add",
+            "multiply"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "New value (set) or delta/factor (add/multiply).",
+          "title": "Value"
+        }
+      },
+      "required": [
+        "lever",
+        "value"
+      ],
+      "title": "LeverChange",
+      "type": "object"
+    },
+    "NamedVariant": {
+      "additionalProperties": false,
+      "properties": {
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/LeverChange"
+          },
+          "minItems": 1,
+          "title": "Changes",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9_.-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "changes"
+      ],
+      "title": "NamedVariant",
+      "type": "object"
+    },
+    "SweepSpec": {
+      "additionalProperties": false,
+      "description": "One-factor range, e.g. \"sweep jacks from 10 to 30 by 5\".",
+      "properties": {
+        "lever": {
+          "title": "Lever",
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "stop": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop"
+        },
+        "values": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "lever"
+      ],
+      "title": "SweepSpec",
+      "type": "object"
+    },
+    "UnsupportedRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "nearest_lever": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Closest supported lever.",
+          "title": "Nearest Lever"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "request": {
+          "description": "The part of the request that cannot be expressed.",
+          "title": "Request",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request",
+        "reason"
+      ],
+      "title": "UnsupportedRequest",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:scenario_edit:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiguities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Ambiguities",
+      "type": "array"
+    },
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "changes": {
+      "description": "A single what-if variant vs the baseline.",
+      "items": {
+        "$ref": "#/$defs/LeverChange"
+      },
+      "title": "Changes",
+      "type": "array"
+    },
+    "goal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GoalSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "intent": {
+      "default": "compare",
+      "enum": [
+        "compare",
+        "sweep",
+        "goal_seek",
+        "clarify"
+      ],
+      "title": "Intent",
+      "type": "string"
+    },
+    "metrics": {
+      "description": "Metric ids to report.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "replications": {
+      "anyOf": [
+        {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Replications"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "description": "One sentence restating the request.",
+      "title": "Summary",
+      "type": "string"
+    },
+    "sweep": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SweepSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "unsupported": {
+      "items": {
+        "$ref": "#/$defs/UnsupportedRequest"
+      },
+      "title": "Unsupported",
+      "type": "array"
+    },
+    "variants": {
+      "items": {
+        "$ref": "#/$defs/NamedVariant"
+      },
+      "title": "Variants",
+      "type": "array"
+    }
+  },
+  "title": "ScenarioEdit",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

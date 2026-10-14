@@ -316,6 +316,52 @@ def warmup(
         click.echo(json.dumps(diag.to_dict()))
 
 
+@cli.command("compile")
+@click.argument("edit", type=click.Path(exists=True, path_type=Path))
+@click.option("--scenario", type=click.Path(exists=True, path_type=Path), required=True)
+@click.option("--replications", type=int, default=None)
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
+              help="Write the ExperimentSpec here (YAML).")  # fmt: skip
+@click.option("--plugin", "plugins", multiple=True, help="Extra plug-in 'module:attr'.")
+def compile_cmd(
+    edit: Path,
+    scenario: Path,
+    replications: int | None,
+    output: Path | None,
+    plugins: tuple[str, ...],
+) -> None:
+    """Compile a ScenarioEdit file into a diff + ExperimentSpec (FR-SCG-02/04); runs nothing."""
+    import yaml
+
+    from simcore.compiler import compile_edit
+    from simcore.specs.edit import ScenarioEdit
+
+    try:
+        bundle = load_scenario(scenario)
+        spec = validate_spec(ScenarioEdit, load_document(edit), str(edit))
+        c = compile_edit(
+            spec, bundle, _plugins(plugins).get(bundle.scenario.domain), replications=replications
+        )
+    except Exception as exc:
+        _fail(exc)
+    for vid, lines in c.diffs.items():
+        flag = " [extrapolated]" if vid in c.extrapolated else ""
+        click.echo(f"{vid}{flag}")
+        for d in lines:
+            click.echo(f"  {d.text()}")
+    for kind, items in (("assumption", c.assumptions), ("ambiguity", c.ambiguities),
+                        ("note", c.notes)):  # fmt: skip
+        for item in items:
+            click.echo(f"{kind}: {item}")
+    for g in c.gaps:
+        click.echo(f"unsupported: {g.request} ({g.reason}; nearest: {g.nearest_lever})")
+    if c.experiment is not None and output is not None:
+        doc = c.experiment.model_dump(mode="json", exclude_defaults=True)
+        doc["base_scenario"] = str(scenario.resolve())
+        output.write_text(yaml.safe_dump(doc, sort_keys=False))
+        click.echo(f"wrote {output}")
+
+
 @cli.command()
 @click.argument("events", type=click.Path(exists=True, path_type=Path))
 @click.option("--at", "times", type=float, multiple=True, help="Sim-times to report state at.")

@@ -205,6 +205,7 @@ class ExperimentResult:
     reference: str
     warnings: list[str]
     files: dict[str, Path] = field(default_factory=dict)
+    promoted: ExperimentResult | None = None  # FR-SCG-06 re-run of the promoted variants
 
     # -- lookups -------------------------------------------------------------
 
@@ -292,7 +293,19 @@ class ExperimentResult:
             ],
             "warnings": self.warnings,
             "provenance": self.provenance(),
+            "fidelity": self.fidelity_dict(),
         }
+
+    def fidelity_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {"screen": self.mode, "promoted": [], "promoted_mode": None}
+        if self.promoted is not None:
+            p = self.promoted
+            out["promoted"] = [v.id for v in p.variants if v.id != p.reference]
+            out["promoted_mode"] = p.mode
+            out["promoted_summary"] = {
+                k: p.summary_dict()[k] for k in ("summaries", "comparisons", "failures", "warnings")
+            }
+        return out
 
     def write(self, directory: Path) -> dict[str, Path]:
         from simcore.experiment.report import write_reports
@@ -534,6 +547,40 @@ class ExperimentRunner:
                 return False
         return True
 
+    def _promote(self, result: ExperimentResult, n: int) -> None:
+        """Re-run the reference and the promoted variants at ``promoted_mode`` (CRN seeds)."""
+        chosen = select_promoted(result)
+        fp = self.spec.fidelity
+        if not chosen:
+            result.warnings.append("fidelity promotion requested but no variant qualified")
+            return
+        if fp.promoted_mode != "logical":
+            from simcore.adapters import BackendUnavailableError, get_backend
+
+            try:
+                get_backend(fp.promoted_mode)
+            except (BackendUnavailableError, ImportError) as exc:
+                result.warnings.append(
+                    f"promotion of {chosen} to {fp.promoted_mode} skipped: {exc}; all results "
+                    f"are from the {self.mode} screen"
+                )
+                return
+        keep = {result.reference, *chosen}
+        screen_variants, screen_mode = self.variants, self.mode
+        try:
+            self.variants = [v for v in screen_variants if v.id in keep]
+            self.mode = fp.promoted_mode
+            outcomes = self._execute(self._jobs(range(n)))
+            order = {v.id: i for i, v in enumerate(self.variants)}
+            outcomes.sort(key=lambda o: (order[o.variant_id], o.replication))
+            result.promoted = summarize(self.spec, self.variants, outcomes, self.mode)
+        finally:
+            self.variants, self.mode = screen_variants, screen_mode
+        result.warnings.append(
+            f"variants {chosen} were promoted from {screen_mode} to {fp.promoted_mode}; "
+            "each result is labeled with its fidelity mode"
+        )
+
     def run(self) -> ExperimentResult:
         n = self.spec.replications
         outcomes = self._execute(self._jobs(range(n)))
@@ -555,9 +602,31 @@ class ExperimentRunner:
         order = {v.id: i for i, v in enumerate(self.variants)}
         outcomes.sort(key=lambda o: (order[o.variant_id], o.replication))
         result = summarize(self.spec, self.variants, outcomes, self.mode, warnings_)
+        if self.spec.fidelity.promote_top_k or self.spec.fidelity.promote:
+            self._promote(result, n)
         if self.experiment_dir is not None:
             result.write(self.experiment_dir)
         return result
+
+
+def select_promoted(result: ExperimentResult) -> list[str]:
+    """Top-K variants by the rank metric plus explicitly requested ones (FR-SCG-06)."""
+    fp = result.spec.fidelity
+    chosen = [v for v in fp.promote if any(x.id == v for x in result.variants)]
+    metric = fp.rank_metric or (result.metrics[0] if result.metrics else None)
+    if fp.promote_top_k and metric is not None:
+        sign = -1.0 if fp.rank_direction == "higher_is_better" else 1.0
+        ranked = []
+        for v in result.variants:
+            if v.id == result.reference:
+                continue
+            m = result.summary(v.id, metric).mean if metric in result.metrics else math.nan
+            if not math.isnan(m):
+                ranked.append((sign * m, v.id))
+        for _, vid in sorted(ranked)[: fp.promote_top_k]:
+            if vid not in chosen:
+                chosen.append(vid)
+    return chosen
 
 
 def summarize(
@@ -580,11 +649,6 @@ def summarize(
     failed = [o for o in outcomes if not o.ok]
     if failed:
         warn_list.append(f"{len(failed)} replication(s) failed; see 'failures'")
-    if spec.fidelity.promote_top_k:
-        warn_list.append(
-            "fidelity promotion requested but kinematic/physics backends arrive in M4; "
-            "all results are from the screening mode"
-        )
     reference = BASELINE_ID if spec.include_baseline else variants[0].id
 
     def values(vid: str, metric: str) -> dict[int, float]:

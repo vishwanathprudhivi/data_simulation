@@ -35,6 +35,7 @@ class Comparison(SpecModel):
     ci_excludes_zero: bool
     significant: bool
     extrapolated: bool = False
+    fidelity: FidelityMode = Field(default="logical", description="Mode that produced it.")
     ref_id: str
 
 

@@ -18,6 +18,7 @@ from simcore.specs.domain import (
     LeverCatalog,
     MetricCatalog,
 )
+from simcore.specs.edit import ScenarioEdit
 from simcore.specs.experiment import ExperimentSpec
 from simcore.specs.facility import FacilityManifest
 from simcore.specs.findings import Findings
@@ -42,6 +43,7 @@ SPECS: dict[str, type[BaseModel]] = {
     "chart_spec": ChartSpec,
     "findings": Findings,
     "plan": PlanSpec,
+    "scenario_edit": ScenarioEdit,
 }
 
 

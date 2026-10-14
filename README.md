@@ -21,6 +21,7 @@ onboarding kit.
 | M6 Domain definitions, catalogs, Tier-0 process network | done |
 | M7 Service layer (FastAPI, jobs, SSE, cache) | done |
 | M8 Semantic layer & charts (DuckDB, Vega-Lite) | done |
+| M9 Scenario compiler, Findings & narrative | done |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -59,6 +60,19 @@ Service (API at http://127.0.0.1:8000/api/v1/docs):
 make api                         # in-process workers, examples seeded into the library
 docker compose up                # API + Redis + CPU worker
 ```
+
+Natural language -> draft scenario card (diff, assumptions, gaps, estimate); nothing
+runs until you submit the returned `submit` body to `/experiments`:
+
+```bash
+curl -s localhost:8000/api/v1/compile -H 'content-type: application/json' -d '{
+  "text": "add 5 jacks and compare to baseline",
+  "scenario": {"example": "scenarios/warehouse/baseline.yaml"}}'
+# after the job completes: GET /api/v1/jobs/<id>/findings  (Findings + narrative)
+```
+
+The compiler uses a deterministic rule-based client by default; set
+`SIMCORE_REASONING=anthropic` (and `ANTHROPIC_API_KEY`) to compile with Claude.
 
 From Python:
 

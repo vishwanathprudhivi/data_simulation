@@ -220,7 +220,7 @@ class WarehouseKpis:
 
 class WarehousePlugin(DomainPlugin):
     name = "warehouse"
-    version = "0.3.0"
+    version = "0.3.1"
     description = "Warehouse outbound: triple pallet jacks and selectors on a geometric layout."
 
     def entity_types(self) -> Mapping[str, str]:

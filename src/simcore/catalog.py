@@ -15,7 +15,7 @@ from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
 
-from simcore.core.config import ConfigError, ConfigIssue, ScenarioBundle
+from simcore.core.config import ConfigError, ConfigIssue, ScenarioBundle, get_path
 from simcore.core.plugins import DomainPlugin
 from simcore.core.units import UnitError, to_si
 from simcore.specs.distributions import DistributionSpec
@@ -38,7 +38,9 @@ __all__ = [
     "apply_levers",
     "capability_manifest",
     "dimension_catalog",
+    "envelope_check",
     "lever_catalog",
+    "lever_values",
     "metric_catalog",
 ]
 
@@ -478,15 +480,32 @@ def apply_levers(
         overrides[lever.path] = coerced
     if issues:
         raise ConfigError(issues)
-    outside: dict[str, dict[str, Any]] = {}
-    for bound in d.envelope:
-        if bound.lever in clean and isinstance(clean[bound.lever], (int, float)):
-            v = clean[bound.lever]
-            if (bound.min is not None and v < bound.min) or (
-                bound.max is not None and v > bound.max
-            ):
-                outside[bound.lever] = {"value": v, "min": bound.min, "max": bound.max}
+    outside = envelope_check(plugin, clean)
     return LeverApplication(bundle.with_overrides(overrides), overrides, clean, outside)
+
+
+def envelope_check(plugin: DomainPlugin, values: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    """Levers whose value lies outside the calibrated envelope (FR-SCG-09)."""
+    outside: dict[str, dict[str, Any]] = {}
+    for bound in _definition(plugin).envelope:
+        v = values.get(bound.lever)
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            continue
+        if (bound.min is not None and v < bound.min) or (bound.max is not None and v > bound.max):
+            outside[bound.lever] = {"value": v, "min": bound.min, "max": bound.max}
+    return outside
+
+
+def lever_values(bundle: ScenarioBundle, plugin: DomainPlugin) -> dict[str, Any]:
+    """Current value of every catalog lever in ``bundle`` (missing paths are skipped)."""
+    doc = bundle.scenario.model_dump(mode="json", by_alias=True)
+    out: dict[str, Any] = {}
+    for lever in _definition(plugin).levers:
+        try:
+            out[lever.id] = get_path(doc, lever.path)
+        except (KeyError, ValueError):
+            continue
+    return out
 
 
 def _bounds_hint(lever: LeverDef) -> str:

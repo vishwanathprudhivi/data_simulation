@@ -1,5 +1,27 @@
 # Changelog
 
+## M9 – Scenario compiler & variants (2026-10-14)
+
+**Exit gate:** AC-SCG-01 ("add 5 jacks and compare to baseline" -> draft card with
+diff -> confirmation -> CRN experiment -> `Findings` with paired CI, logical mode, no
+code changes), AC-SCG-02 (a variant outside the calibrated envelope is flagged
+"extrapolated" in the card, the findings and the narrative), AC-CHAT-03 (identical
+variants -> no improvement claimed) and AC-CHAT-05 (unknown lever -> gap explanation
+with the nearest alternative and a logged gap) — passing with the deterministic
+heuristic client. Live-model recordings are still to be captured.
+
+Implemented: `ScenarioEdit` spec; deterministic compiler (`simcore.compiler`,
+`simcore compile` CLI) with diffs, assumptions, ambiguities, envelope flags and CRN
+`ExperimentSpec`s (single what-if, named variants, sweeps); `ReasoningClient`
+implementations for Claude (structured outputs, refusal fallbacks), record/replay and
+a rule-based compiler; repair loop (max 2); capability-gap logging; FR-SCG-05 goal
+seeking with a trace and run cap; FR-SCG-06 tiered fidelity promotion with per-result
+mode labels; FR-SCG-11 `Findings` synthesis and the guarded narrative. API:
+`POST /compile`, `GET /jobs/{id}/findings`. Lever/metric `synonyms` in domain
+definitions (warehouse 0.3.1).
+
+Decisions: ADR-013.
+
 ## M8 – Semantic layer & visualization (2026-10-14)
 
 **Exit gate:** AC-SEM-01 (a metric added to `domain.yaml` appears in the metric

@@ -44,6 +44,10 @@ class FidelityPlan(SpecModel):
     promote_top_k: int = Field(default=0, ge=0)
     promoted_mode: FidelityMode = "kinematic"
     rank_metric: str | None = None
+    rank_direction: Literal["higher_is_better", "lower_is_better"] = "higher_is_better"
+    promote: list[str] = Field(
+        default_factory=list, description="Variant ids to promote regardless of rank."
+    )
 
 
 class AdaptiveSpec(SpecModel):

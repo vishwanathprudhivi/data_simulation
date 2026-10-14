@@ -79,6 +79,14 @@
           "default": null,
           "title": "Step"
         },
+        "synonyms": {
+          "description": "Words users say for this lever (compile hints).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Synonyms",
+          "type": "array"
+        },
         "type": {
           "enum": [
             "int",

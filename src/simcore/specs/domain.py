@@ -67,6 +67,7 @@ class MetricDef(SpecModel):
         "replication_mean_ci"
     )
     format: NumberFormat = Field(default_factory=NumberFormat)
+    synonyms: list[str] = Field(default_factory=list, description="Words users say for it.")
 
 
 class DimensionDef(SpecModel):
@@ -91,6 +92,9 @@ class LeverDef(SpecModel):
     default: Any = None
     choices: list[Any] = Field(default_factory=list)
     depends_on: list[Identifier] = Field(default_factory=list)
+    synonyms: list[str] = Field(
+        default_factory=list, description="Words users say for this lever (compile hints)."
+    )
 
     @model_validator(mode="after")
     def _check(self) -> LeverDef:
