@@ -17,6 +17,7 @@ onboarding kit.
 | M2 Experiment layer | done |
 | M3 Facility + interaction (warehouse domain) | done |
 | M4 Omniverse adapter | code done; Isaac/GPU verification pending |
+| M5 Dispatch & policies (Redis, plans, solver) | done |
 | M4 – M14 | in progress |
 
 ## Quick start

@@ -100,6 +100,7 @@ def validate(path: Path, kind: str | None, plugins: tuple[str, ...]) -> None:
     help="Fixed step (s); default event-driven (logical) or 0.5 s (kinematic).",
 )
 @click.option("--set", "sets", multiple=True, help="Override 'path=value' (YAML value).")
+@click.option("--queue", default=None, help="Task queue: 'memory' (default) or a redis:// URL.")
 @click.option("--plugin", "plugins", multiple=True)
 def run(
     scenario: Path,
@@ -111,6 +112,7 @@ def run(
     jsonl: bool,
     step: float | None,
     sets: tuple[str, ...],
+    queue: str | None,
     plugins: tuple[str, ...],
 ) -> None:
     """Run one replication of SCENARIO and write runs/<exp>/<scenario>/<rep>/ (AC-ENG-01)."""
@@ -136,6 +138,7 @@ def run(
             plugins=_plugins(plugins),
             jsonl=jsonl,
             step=step,
+            queue=queue,
         )
     except Exception as exc:
         _fail(exc)

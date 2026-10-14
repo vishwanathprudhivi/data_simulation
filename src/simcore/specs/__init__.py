@@ -19,6 +19,7 @@ from simcore.specs.domain import (
 from simcore.specs.experiment import ExperimentSpec
 from simcore.specs.facility import FacilityManifest
 from simcore.specs.findings import Findings
+from simcore.specs.plan import PlanSpec
 from simcore.specs.query import QuerySpec
 from simcore.specs.registry import SPECS, export_schemas, schema_for
 from simcore.specs.scenario import ScenarioSpec
@@ -37,6 +38,7 @@ __all__ = [
     "Findings",
     "LeverCatalog",
     "MetricCatalog",
+    "PlanSpec",
     "QuerySpec",
     "ScenarioSpec",
     "SpecModel",

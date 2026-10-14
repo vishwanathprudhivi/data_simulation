@@ -12,12 +12,28 @@ import pytest
 
 from simcore.core.dispatch import InMemoryQueue, QueueError, Task, TaskQueue
 
-QUEUE_FACTORIES: dict[str, Callable[[], TaskQueue]] = {"memory": InMemoryQueue}
+
+def _redis() -> TaskQueue:
+    import os
+
+    from simcore.core.dispatch.redis_queue import RedisQueue
+
+    return RedisQueue(os.environ["SIMCORE_REDIS_URL"])
 
 
-@pytest.fixture(params=sorted(QUEUE_FACTORIES))
-def queue(request: pytest.FixtureRequest) -> TaskQueue:
-    return QUEUE_FACTORIES[request.param]()
+QUEUE_FACTORIES: dict[str, Callable[[], TaskQueue]] = {"memory": InMemoryQueue, "redis": _redis}
+
+
+@pytest.fixture(
+    params=[
+        "memory",
+        pytest.param("redis", marks=pytest.mark.redis),
+    ]
+)
+def queue(request: pytest.FixtureRequest):  # type: ignore[no-untyped-def]
+    q = QUEUE_FACTORIES[request.param]()
+    yield q
+    q.close()
 
 
 def t(id_: str, priority: int = 0, release: float = 0.0) -> Task:
@@ -28,6 +44,14 @@ def test_FR_DSP_03_order_priority_release_then_insertion(queue: TaskQueue) -> No
     for task in (t("c", 0, 5.0), t("a", 0, 1.0), t("hi", 2, 9.0), t("b", 0, 1.0)):
         queue.put(task)
     assert [x.id for x in queue.pending()] == ["hi", "a", "b", "c"]
+
+
+def test_FR_DSP_02_in_flight_reports_claim_order(queue: TaskQueue) -> None:
+    for name in ("a", "b", "c"):
+        queue.put(t(name))
+    queue.claim("x", "c")
+    queue.claim("y", "a")
+    assert list(queue.in_flight().items()) == [("c", "x"), ("a", "y")]
 
 
 def test_FR_DSP_02_claim_ack(queue: TaskQueue) -> None:

@@ -26,10 +26,32 @@ def default_plugins(extra: Sequence[str] = ()) -> PluginRegistry:
     return registry
 
 
+def queue_factory(url: str | None) -> Any:
+    """``None``/``memory`` -> in-memory queue; ``redis://...`` -> RedisQueue (FR-DSP-06)."""
+    from simcore.core.dispatch.queue import InMemoryQueue
+
+    if url is None or url == "memory":
+        return InMemoryQueue
+    if url.startswith(("redis://", "rediss://", "unix://")):
+        from simcore.core.dispatch.redis_queue import RedisQueue
+
+        return lambda: RedisQueue(url)
+    raise ValueError(f"unknown queue {url!r}; use 'memory' or a redis:// URL")
+
+
 def default_engine(
-    mode: str = "logical", plugins: PluginRegistry | None = None, **kwargs: Any
+    mode: str = "logical",
+    plugins: PluginRegistry | None = None,
+    queue: str | None = None,
+    **kwargs: Any,
 ) -> Engine:
-    return Engine(plugins or default_plugins(), get_backend, mode=mode, **kwargs)
+    return Engine(
+        plugins or default_plugins(),
+        get_backend,
+        mode=mode,
+        queue_factory=queue_factory(queue),
+        **kwargs,
+    )
 
 
 def run_scenario(
@@ -43,9 +65,10 @@ def run_scenario(
     plugins: PluginRegistry | None = None,
     jsonl: bool = False,
     step: float | None = None,
+    queue: str | None = None,
 ) -> RunResult:
     """Run one replication; write outputs under ``out`` when given (AC-ENG-01)."""
-    engine = default_engine(mode, plugins)
+    engine = default_engine(mode, plugins, queue=queue)
     try:
         engine.load_config(scenario, overrides).build_world()
         result = engine.run_replication(seed, replication, step=step)

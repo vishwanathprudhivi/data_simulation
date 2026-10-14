@@ -24,6 +24,7 @@ from simcore.core.provenance import engine_version
 from simcore.experiment.runner import ExperimentRunner
 from simcore.experiment.stats import CIEstimate, mean_ci
 from simcore.specs.experiment import ExperimentSpec
+from simcore.specs.plan import PlanSpec
 
 __all__ = ["Evaluation", "Evaluator"]
 
@@ -135,6 +136,7 @@ class Evaluator:
         replications: int = 10,
         seed: int = 0,
         kpis: Sequence[str] | None = None,
+        plan: PlanSpec | Mapping[str, Any] | None = None,
     ) -> Evaluation:
         """Run (or fetch from cache) ``replications`` of the scenario with ``params`` overrides.
 
@@ -142,6 +144,11 @@ class Evaluator:
         use common random numbers, so their KPI differences can be paired.
         """
         params = dict(params or {})
+        if plan is not None:  # evaluate an optimizer's plan (FR-IFC-03 plan_or_params)
+            # normalise so equal plans hash equally however they were given
+            plan_spec = plan if isinstance(plan, PlanSpec) else PlanSpec.model_validate(dict(plan))
+            data = plan_spec.model_dump(mode="json")
+            params = {**params, "policy.name": "plan_follower", "policy.params": {"plan": data}}
         key = self.cache_key(params, replications, seed)
         entry = self._load(key)
         cached = entry is not None

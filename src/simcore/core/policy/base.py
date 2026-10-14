@@ -105,6 +105,14 @@ class Policy(ABC):
     @abstractmethod
     def decide(self, observation: DispatchObservation) -> DispatchAction: ...
 
+    def kpi_calculators(self) -> Sequence[Any]:
+        """Policy-specific KPI calculators (e.g. plan adherence)."""
+        return ()
+
+    def report(self, kpis: Mapping[str, float]) -> dict[str, Any] | None:
+        """Optional post-run report placed in run metadata (e.g. plan vs realized)."""
+        return None
+
     @classmethod
     def observation_schema(cls) -> dict[str, Any]:
         return TypeAdapter(cls.observation_type).json_schema()
@@ -196,6 +204,13 @@ BUILTIN_POLICIES: dict[str, PolicyFactory] = {
     NearestTaskPolicy.name: NearestTaskPolicy,
     ZoneAffinityPolicy.name: ZoneAffinityPolicy,
 }
+
+
+def _register_plan_policies() -> None:
+    from simcore.core.policy.plan import PlanFollowerPolicy, SolverCallbackPolicy
+
+    BUILTIN_POLICIES[PlanFollowerPolicy.name] = PlanFollowerPolicy
+    BUILTIN_POLICIES[SolverCallbackPolicy.name] = SolverCallbackPolicy
 
 
 def make_policy(

@@ -1,5 +1,23 @@
 # Changelog
 
+## M5 – Dispatch & policies (2026-10-14)
+
+**Exit gate:** AC-DSP-01 (in-memory and Redis queues pass the same conformance
+suite; Redis tests ran here against a local redis-server and run in CI via a
+service container), AC-DSP-02 (external plan executed; realized KPIs reported
+against plan expectations), AC-IFC-01 (evaluator incl. plans, cached) — passing.
+
+Implemented: FR-DSP-02/06 `RedisQueue` + queue selection; FR-DSP-05 `PlanSpec` and
+`plan_follower` with adherence KPIs and plan-vs-realized report; FR-POL-02
+`solver_callback` and `assignment_min_distance`; FR-POL-05 policies share one
+contract and compare under CRN through the Evaluator; FR-IFC-03 `evaluate(plan=...)`.
+Plan file paths in `policy.params.plan` resolve relative to the scenario file.
+
+Decisions: ADR-009. New schema: `schemas/plan.schema.json`.
+
+Deferrals: RL policy loader (ONNX/TorchScript) and constrained online LLM policy
+(FR-POL-02 S / FR-POL-04 C) are M14 items.
+
 ## M4 – Omniverse adapter (2026-10-14)
 
 **Exit gate:** AC-X-01 and AC-X-02 need Isaac Sim on a GPU and are **not yet run**

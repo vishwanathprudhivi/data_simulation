@@ -30,7 +30,7 @@ coverage:
 test-isaac:
 	$(BIN)/pytest -m isaac
 
-test-redis:
+test-redis:  # needs SIMCORE_REDIS_URL, e.g. redis://localhost:6379/0
 	$(BIN)/pytest -m redis
 
 schemas:

@@ -12,7 +12,14 @@ from simcore.core.policy.base import (
     PolicyError,
     TaskView,
     ZoneAffinityPolicy,
+    _register_plan_policies,
     make_policy,
+)
+from simcore.core.policy.plan import (
+    PlanFollowerPolicy,
+    SolverCallbackPolicy,
+    assignment_min_distance,
+    load_plan,
 )
 from simcore.core.policy.reasoning import (
     DisabledReasoningClient,
@@ -22,6 +29,8 @@ from simcore.core.policy.reasoning import (
     ReasoningRequest,
     ReasoningResponse,
 )
+
+_register_plan_policies()
 
 __all__ = [
     "BUILTIN_POLICIES",
@@ -33,13 +42,17 @@ __all__ = [
     "FifoPolicy",
     "MockReasoningClient",
     "NearestTaskPolicy",
+    "PlanFollowerPolicy",
     "Policy",
     "PolicyError",
     "ReasoningClient",
     "ReasoningDisabledError",
     "ReasoningRequest",
     "ReasoningResponse",
+    "SolverCallbackPolicy",
     "TaskView",
     "ZoneAffinityPolicy",
+    "assignment_min_distance",
+    "load_plan",
     "make_policy",
 ]

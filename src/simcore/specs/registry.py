@@ -15,6 +15,7 @@ from simcore.specs.domain import DimensionCatalog, DomainDefinition, LeverCatalo
 from simcore.specs.experiment import ExperimentSpec
 from simcore.specs.facility import FacilityManifest
 from simcore.specs.findings import Findings
+from simcore.specs.plan import PlanSpec
 from simcore.specs.query import QuerySpec
 from simcore.specs.scenario import ScenarioSpec
 
@@ -33,6 +34,7 @@ SPECS: dict[str, type[BaseModel]] = {
     "query_spec": QuerySpec,
     "chart_spec": ChartSpec,
     "findings": Findings,
+    "plan": PlanSpec,
 }
 
 

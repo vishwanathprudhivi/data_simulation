@@ -236,6 +236,11 @@ def _absolutize_refs(doc: dict[str, Any], base: Path) -> None:
         ref = doc.get(key)
         if isinstance(ref, str) and not Path(ref).is_absolute():
             doc[key] = str((base / ref).resolve())
+    policy = doc.get("policy")
+    if isinstance(policy, dict) and isinstance(policy.get("params"), dict):
+        plan = policy["params"].get("plan")
+        if isinstance(plan, str) and not Path(plan).is_absolute():
+            policy["params"]["plan"] = str((base / plan).resolve())
     for src in doc.get("demand", []) or []:
         path = src.get("path") if isinstance(src, dict) else None
         if isinstance(path, str) and not Path(path).is_absolute():

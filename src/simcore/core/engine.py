@@ -257,8 +257,10 @@ class Engine:
 
     def kpi_registry(self) -> KpiRegistry:
         assert self.plugin is not None
+        policy = getattr(self.model, "policy", None)
+        extra = list(policy.kpi_calculators()) if policy is not None else []
         return KpiRegistry(
-            [*core_kpi_calculators(), InteractionKpis(), *self.plugin.kpi_calculators()]
+            [*core_kpi_calculators(), InteractionKpis(), *self.plugin.kpi_calculators(), *extra]
         )
 
     def collect(self) -> RunResult:
@@ -297,6 +299,10 @@ class Engine:
             "event_log_records": len(self.ctx.log),
             "kpi_digest": hashlib.sha256(canonical_json(kpis).encode()).hexdigest()[:16],
         }
+        policy = getattr(self.model, "policy", None)
+        report = policy.report(kpis) if policy is not None else None
+        if report is not None:
+            meta["policy_report"] = report
         self._state = "collected"
         return RunResult(self.ctx.log, kpis, meta)
 
