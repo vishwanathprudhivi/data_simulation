@@ -1,0 +1,33 @@
+# Reference scenario (BRD 9 example 1): 4-hour outbound shift, historical-replay
+# demand in four waves, 12 triple-pallet-jack operators. Terminating simulation of
+# one shift, so there is no warm-up deletion.
+schema_version: "1.0"
+id: wh_baseline
+name: Outbound shift baseline (replay)
+domain: warehouse
+facility: ../../facilities/warehouse_dc.yaml
+behaviors: behaviors.yaml
+duration: 4 h
+warmup: 0
+seed: 11
+fleet:
+  - agent_type: pallet_jack_operator
+    count: 12
+    attributes:
+      start: [staging_lane_01, staging_lane_02, staging_lane_03, staging_lane_04]
+demand:
+  - kind: replay
+    path: ../../data/warehouse_orders.csv
+    columns:
+      id: order_id
+      release_time: release_s
+      due_time: due_s
+      origin: pick_face
+      destination: staging_lane
+      quantity: pallets
+policy:
+  name: nearest_task
+  assignment: pull
+interaction:
+  colocation: {penalty_per_agent: 0.3}
+  deadlock: {strategy: priority_yield}

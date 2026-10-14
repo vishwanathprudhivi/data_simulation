@@ -1,0 +1,79 @@
+# Onboarding draft of the packaging line, written from the SOP before any data was seen.
+# Service times are the SOP's nominal cycle times (rough guesses); `simcore domain backtest`
+# refits them from data/station_log.csv. Times are seconds, one tray per service.
+schema_version: "1.0"
+id: packaging_line
+name: Packaging / fill-finish line
+version: 0.9.0
+tier: 0
+description: >-
+  Depalletizer -> filler -> capper -> labeler -> case packer, with buffers,
+  product changeovers on the filler, an operator pool and random breakdowns.
+resource_types:
+  - {id: operator, description: Line operator (labeler and case packer need one)}
+work_item_types:
+  - {id: sku_a, description: Tray of product A}
+  - {id: sku_b, description: Tray of product B}
+process:
+  stations:
+    - id: depal
+      description: Depalletizer
+      service_time: {kind: triangular, low: 8, mode: 10, high: 14}
+    - id: filler
+      description: Rotary filler
+      service_time: {kind: triangular, low: 10, mode: 12, high: 16}
+      buffer_capacity: 20
+      changeover: 5 min
+      failures:
+        mtbf: {kind: exponential, mean: 7200}
+        mttr: {kind: lognormal, mu: 6.3, sigma: 0.4}
+    - id: capper
+      service_time: {kind: triangular, low: 8, mode: 9, high: 12}
+      buffer_capacity: 10
+      failures:
+        mtbf: {kind: exponential, mean: 10800}
+        mttr: {kind: lognormal, mu: 5.7, sigma: 0.5}
+    - id: labeler
+      resource_type: operator
+      service_time: {kind: triangular, low: 9, mode: 10, high: 13}
+      buffer_capacity: 10
+    - id: case_packer
+      resource_type: operator
+      capacity: 2
+      batch_size: 2
+      service_time: {kind: triangular, low: 18, mode: 20, high: 26}
+      buffer_capacity: 12
+  routings:
+    - {work_item_type: sku_a, steps: [depal, filler, capper, labeler, case_packer]}
+    - {work_item_type: sku_b, steps: [depal, filler, capper, labeler, case_packer]}
+dimensions:
+  - {id: station, display_name: Station, kind: categorical, parent: location}
+metrics:
+  - {id: line_output, display_name: Trays packed, unit: "1", formula: tasks_completed,
+     direction: higher_is_better, allowed_dimensions: [variant, replication],
+     format: {kind: integer, decimals: 0}}
+  - {id: wip_mean, display_name: Work in process, unit: "1", formula: wip_mean,
+     direction: lower_is_better, allowed_dimensions: [variant, replication]}
+  - {id: filler_utilization, display_name: Filler utilization, unit: "1",
+     formula: station_filler_utilization, direction: higher_is_better,
+     allowed_dimensions: [variant, replication], format: {kind: percent, decimals: 1}}
+  - {id: filler_downtime, display_name: Filler downtime share, unit: "1",
+     formula: station_filler_down_share, direction: lower_is_better,
+     allowed_dimensions: [variant, replication], format: {kind: percent, decimals: 1}}
+  - {id: bottleneck_utilization, display_name: Bottleneck utilization, unit: "1",
+     formula: bottleneck_utilization, direction: neutral,
+     allowed_dimensions: [variant, replication], format: {kind: percent, decimals: 1}}
+levers:
+  - {id: operators, display_name: Operators, path: fleet.operator.count, type: int,
+     min: 1, max: 12, default: 3}
+  - {id: filler_speed_factor, display_name: Filler cycle-time factor,
+     description: "< 1 speeds the filler up (e.g. 0.9 = 10% faster)",
+     path: params.stations.filler.service_time_factor, type: float, min: 0.5, max: 1.5,
+     default: 1.0}
+  - {id: capper_buffer, display_name: Buffer before capper, path:
+     params.stations.capper.buffer_capacity, type: int, min: 0, max: 100, default: 10}
+  - {id: tray_interarrival, display_name: Mean time between trays (SKU A campaign), path:
+     demand.demand.interarrival.mean, type: duration, unit: s, min: 5, max: 120, default: 14}
+envelope:
+  - {lever: operators, min: 2, max: 6}
+  - {lever: filler_speed_factor, min: 0.8, max: 1.2}

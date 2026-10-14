@@ -127,3 +127,19 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# simcore
+.venv/
+runs/
+.ruff_cache/
+.mypy_cache/
+.import_linter_cache/
+node_modules/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+.e2e-data/
+examples/onboarding/*/report/

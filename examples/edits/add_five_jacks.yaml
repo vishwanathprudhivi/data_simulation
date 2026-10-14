@@ -1,0 +1,10 @@
+# ScenarioEdit (FR-SCG-02): what the compile step produces from "add 5 jacks and compare".
+# simcore compile examples/edits/add_five_jacks.yaml --scenario examples/scenarios/warehouse/baseline.yaml
+schema_version: "1.0"
+intent: compare
+summary: Add 5 pallet jack operators and compare with the baseline
+changes:
+  - {lever: jacks, op: add, value: 5}
+metrics: [pallets_per_labor_hour, dock_on_time_rate, travel_distance_per_pallet]
+assumptions:
+  - jacks means pallet jack operators on shift

@@ -1,0 +1,19 @@
+# Reference M/M/c scenario: lambda = 2.4/s, mu = 1/s, c = 3  => rho = 0.8.
+# Erlang C gives Wq = 1.0787 s, Lq = 2.589. Used by AC-ENG-01/02 and AC-EXP-01.
+schema_version: "1.0"
+id: mmc_baseline
+name: M/M/3 baseline
+domain: toy_queue
+behaviors: behaviors.yaml
+duration: 2200
+warmup: 200
+seed: 42
+fleet:
+  - agent_type: server
+    count: 3
+demand:
+  - kind: stochastic
+    stream: demand
+    interarrival: {kind: exponential, mean: 0.4166666666666667}
+policy:
+  name: fifo

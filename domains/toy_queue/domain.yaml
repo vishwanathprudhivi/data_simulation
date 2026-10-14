@@ -1,0 +1,48 @@
+# Published domain definition (consumed from M6: catalogs, chat tools, UI).
+schema_version: "1.0"
+id: toy_queue
+name: M/M/c toy queue
+version: 0.1.0
+tier: 1
+plugin: domains.toy_queue
+description: Validation domain; analytical results via Erlang C.
+resource_types:
+  - {id: server, description: A single server}
+work_item_types:
+  - {id: task, description: A customer}
+policies: [fifo]
+dimensions:
+  - {id: variant, display_name: Variant, kind: factor}
+  - {id: replication, display_name: Replication, kind: replication}
+metrics:
+  - id: wait_time_mean
+    display_name: Mean wait in queue
+    unit: s
+    formula: wait_time_mean
+    direction: lower_is_better
+    allowed_dimensions: [variant, replication]
+    format: {kind: duration, decimals: 3}
+  - id: utilization
+    display_name: Server utilization
+    unit: "1"
+    formula: utilization
+    direction: neutral
+    allowed_dimensions: [variant, replication]
+    format: {kind: percent, decimals: 1}
+levers:
+  - id: servers
+    display_name: Number of servers
+    path: fleet.server.count
+    type: int
+    min: 1
+    max: 50
+    default: 3
+  - id: mean_interarrival
+    display_name: Mean time between arrivals
+    path: demand.demand.interarrival.mean
+    type: duration
+    unit: s
+    min: 0.01
+    default: 0.4166666666666667
+envelope:
+  - {lever: servers, min: 1, max: 20}

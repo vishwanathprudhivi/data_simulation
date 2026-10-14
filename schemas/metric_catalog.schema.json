@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "MetricDef": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "default": "mean",
+          "enum": [
+            "mean",
+            "sum",
+            "ratio_of_means",
+            "p50",
+            "p90",
+            "p99",
+            "min",
+            "max"
+          ],
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "allowed_dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Dimensions",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "direction": {
+          "default": "neutral",
+          "enum": [
+            "higher_is_better",
+            "lower_is_better",
+            "neutral"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/$defs/NumberFormat"
+        },
+        "formula": {
+          "description": "KPI key, or governed expression over event-log columns.",
+          "title": "Formula",
+          "type": "string"
+        },
+        "grain": {
+          "default": "replication",
+          "enum": [
+            "replication",
+            "task",
+            "agent",
+            "time_bucket"
+          ],
+          "title": "Grain",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "default": "kpi",
+          "enum": [
+            "kpi",
+            "event_log"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "statistical_treatment": {
+          "default": "replication_mean_ci",
+          "enum": [
+            "replication_mean_ci",
+            "ratio_of_means",
+            "none"
+          ],
+          "title": "Statistical Treatment",
+          "type": "string"
+        },
+        "synonyms": {
+          "description": "Words users say for it.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Synonyms",
+          "type": "array"
+        },
+        "unit": {
+          "description": "SI unit symbol or '1' for dimensionless.",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "unit",
+        "formula"
+      ],
+      "title": "MetricDef",
+      "type": "object"
+    },
+    "NumberFormat": {
+      "additionalProperties": false,
+      "properties": {
+        "decimals": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Decimals",
+          "type": "integer"
+        },
+        "kind": {
+          "default": "number",
+          "enum": [
+            "number",
+            "percent",
+            "duration",
+            "integer"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "NumberFormat",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:metric_catalog:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Domain",
+      "type": "string"
+    },
+    "domain_version": {
+      "title": "Domain Version",
+      "type": "string"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/MetricDef"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "domain_version",
+    "metrics"
+  ],
+  "title": "MetricCatalog",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

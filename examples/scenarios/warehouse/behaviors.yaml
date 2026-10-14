@@ -1,0 +1,21 @@
+schema_version: "1.0"
+agent_types:
+  - id: pallet_jack_operator
+    description: Operator riding a triple pallet jack (up to 3 pallets per trip)
+    capabilities: [pallet_move]
+    footprint: {length: 3.2 m, width: 0.8 m}
+    speeds: {empty: 1.6 m/s, loaded: 1.1 m/s}
+    capacity: 3
+    service_times:
+      pick: {kind: lognormal, mu: 3.17, sigma: 0.3}   # per pallet, mean ~25 s
+      drop: {kind: lognormal, mu: 2.44, sigma: 0.3}   # per pallet, mean ~12 s
+    speed_multiplier: {kind: normal, mean: 1.0, sd: 0.08, min: 0.6}
+  - id: selector
+    description: Selector picking cases on foot
+    capabilities: [case_pick]
+    footprint: {length: 0.6 m, width: 0.6 m}
+    speeds: {walk: 1.3 m/s}
+    capacity: 1
+    service_times:
+      pick: {kind: gamma, shape: 4, scale: 10}
+      drop: {kind: constant, value: 8}

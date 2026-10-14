@@ -1,0 +1,398 @@
+{
+  "$defs": {
+    "AdaptiveSpec": {
+      "additionalProperties": false,
+      "description": "Sequential replication (FR-EXP-07).",
+      "properties": {
+        "max_replications": {
+          "default": 100,
+          "minimum": 2,
+          "title": "Max Replications",
+          "type": "integer"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "relative": {
+          "default": true,
+          "title": "Relative",
+          "type": "boolean"
+        },
+        "target_half_width": {
+          "exclusiveMinimum": 0,
+          "title": "Target Half Width",
+          "type": "number"
+        }
+      },
+      "required": [
+        "metric",
+        "target_half_width"
+      ],
+      "title": "AdaptiveSpec",
+      "type": "object"
+    },
+    "FactorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "levels": {
+          "items": {},
+          "minItems": 1,
+          "title": "Levels",
+          "type": "array"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "description": "Scenario path the factor sets (same syntax as overrides).",
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "levels"
+      ],
+      "title": "FactorSpec",
+      "type": "object"
+    },
+    "FidelityPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "promote": {
+          "description": "Variant ids to promote regardless of rank.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Promote",
+          "type": "array"
+        },
+        "promote_top_k": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Promote Top K",
+          "type": "integer"
+        },
+        "promoted_mode": {
+          "default": "kinematic",
+          "enum": [
+            "logical",
+            "kinematic",
+            "physics"
+          ],
+          "title": "Promoted Mode",
+          "type": "string"
+        },
+        "rank_direction": {
+          "default": "higher_is_better",
+          "enum": [
+            "higher_is_better",
+            "lower_is_better"
+          ],
+          "title": "Rank Direction",
+          "type": "string"
+        },
+        "rank_metric": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rank Metric"
+        },
+        "screen": {
+          "default": "logical",
+          "enum": [
+            "logical",
+            "kinematic",
+            "physics"
+          ],
+          "title": "Screen",
+          "type": "string"
+        }
+      },
+      "title": "FidelityPlan",
+      "type": "object"
+    },
+    "GoalSeekSpec": {
+      "additionalProperties": false,
+      "description": "Goal attached to a sweep (FR-SCG-05): which variant meets the target, with a trace.",
+      "properties": {
+        "lever": {
+          "title": "Lever",
+          "type": "string"
+        },
+        "metric": {
+          "description": "KPI key compared with the target.",
+          "title": "Metric",
+          "type": "string"
+        },
+        "minimize_lever": {
+          "default": true,
+          "title": "Minimize Lever",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Scenario path the variants set.",
+          "title": "Path",
+          "type": "string"
+        },
+        "sense": {
+          "default": ">=",
+          "enum": [
+            ">=",
+            "<="
+          ],
+          "title": "Sense",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lever",
+        "path",
+        "metric",
+        "target"
+      ],
+      "title": "GoalSeekSpec",
+      "type": "object"
+    },
+    "VariantSpec": {
+      "additionalProperties": false,
+      "description": "A named alternative: overrides applied to the base scenario.\n\nOverride keys are scenario paths, e.g. ``fleet.server.count`` (list items are\nselected by their ``agent_type``/``id``) or ``params.arrival_rate``.",
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "overrides": {
+          "additionalProperties": true,
+          "title": "Overrides",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "VariantSpec",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:experiment:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adaptive": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AdaptiveSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "base_scenario": {
+      "description": "Path or id of the baseline scenario.",
+      "title": "Base Scenario",
+      "type": "string"
+    },
+    "confidence": {
+      "default": 0.95,
+      "exclusiveMaximum": 1,
+      "exclusiveMinimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "crn": {
+      "default": true,
+      "description": "Common random numbers across alternatives.",
+      "title": "Crn",
+      "type": "boolean"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "design": {
+      "default": "full_factorial",
+      "enum": [
+        "explicit",
+        "full_factorial",
+        "latin_hypercube"
+      ],
+      "title": "Design",
+      "type": "string"
+    },
+    "factors": {
+      "items": {
+        "$ref": "#/$defs/FactorSpec"
+      },
+      "title": "Factors",
+      "type": "array"
+    },
+    "fidelity": {
+      "$ref": "#/$defs/FidelityPlan"
+    },
+    "goal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GoalSeekSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "include_baseline": {
+      "default": true,
+      "title": "Include Baseline",
+      "type": "boolean"
+    },
+    "kpis": {
+      "description": "Empty = all registered KPIs.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Kpis",
+      "type": "array"
+    },
+    "master_seed": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Master Seed",
+      "type": "integer"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "parallelism": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Parallelism",
+      "type": "integer"
+    },
+    "replications": {
+      "default": 10,
+      "minimum": 1,
+      "title": "Replications",
+      "type": "integer"
+    },
+    "run_length": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Overrides scenario duration.",
+      "title": "Run Length"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "timeout_s": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per-replication timeout.",
+      "title": "Timeout S"
+    },
+    "variants": {
+      "items": {
+        "$ref": "#/$defs/VariantSpec"
+      },
+      "title": "Variants",
+      "type": "array"
+    },
+    "warmup": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Overrides scenario warm-up.",
+      "title": "Warmup"
+    }
+  },
+  "required": [
+    "id",
+    "base_scenario"
+  ],
+  "title": "ExperimentSpec",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

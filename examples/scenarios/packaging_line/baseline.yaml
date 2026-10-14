@@ -1,0 +1,23 @@
+# One 8-hour shift of the Tier-0 packaging line: SKU A campaign for 4 h, then SKU B
+# (one filler changeover), three operators.
+schema_version: "1.0"
+id: pl_baseline
+name: Packaging line shift
+domain: packaging_line
+behaviors: behaviors.yaml
+duration: 8 h
+warmup: 30 min
+seed: 5
+fleet:
+  - {agent_type: operator, count: 3}
+demand:
+  - kind: stochastic
+    stream: demand
+    task_type: sku_a
+    interarrival: {kind: exponential, mean: 14}
+    stop: 4 h
+  - kind: stochastic
+    stream: demand_b
+    task_type: sku_b
+    interarrival: {kind: exponential, mean: 14}
+    start: 4 h

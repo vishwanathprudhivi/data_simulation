@@ -1,0 +1,15 @@
+# BRD 9 example 2: fleet-size sweep 10-30 jacks with common random numbers.
+schema_version: "1.0"
+id: wh_fleet_sweep
+base_scenario: ../scenarios/warehouse/narrow_aisles.yaml
+include_baseline: false
+factors:
+  - name: jacks
+    path: fleet.pallet_jack_operator.count
+    levels: [10, 15, 20, 25, 30]
+replications: 5
+master_seed: 7
+crn: true
+kpis: [dock_on_time_rate, pallets_per_labor_hour, cycle_time_mean, blocked_time_per_agent,
+       bay_colocation_time, travel_distance_per_pallet]
+parallelism: 4

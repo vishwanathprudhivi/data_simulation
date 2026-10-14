@@ -1,0 +1,7 @@
+# FR-SCN-05: inherits everything from the baseline and overrides the fleet size.
+id: mmc_four_servers
+name: M/M/4 variant
+extends: mmc_baseline.yaml
+fleet:
+  - agent_type: server
+    count: 4

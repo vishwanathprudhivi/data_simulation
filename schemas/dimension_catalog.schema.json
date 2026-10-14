@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "DimensionDef": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Source column; defaults to id.",
+          "title": "Column"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "categorical",
+          "enum": [
+            "time_bucket",
+            "categorical",
+            "factor",
+            "replication"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hierarchy parent dimension.",
+          "title": "Parent"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "DimensionDef",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:dimension_catalog:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/DimensionDef"
+      },
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "domain": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Domain",
+      "type": "string"
+    },
+    "domain_version": {
+      "title": "Domain Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "domain_version",
+    "dimensions"
+  ],
+  "title": "DimensionCatalog",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

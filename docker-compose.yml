@@ -1,0 +1,38 @@
+# Local / internal-server deployment (BRD Q9): API + CPU worker + Redis.
+# GPU workers: `docker compose --profile gpu up` on a host with the NVIDIA runtime.
+services:
+  redis:
+    image: redis:7
+  api:
+    build: {context: ., dockerfile: docker/Dockerfile}
+    environment:
+      SIMCORE_HOST: 0.0.0.0
+      SIMCORE_BROKER: redis
+      SIMCORE_REDIS_URL: redis://redis:6379/0
+      SIMCORE_AUTH: ${SIMCORE_AUTH:-0}
+      SIMCORE_SECRET: ${SIMCORE_SECRET:-change-me}
+    ports: ["8000:8000"]
+    volumes: ["simcore-data:/data"]
+    depends_on: [redis]
+  worker-cpu:
+    build: {context: ., dockerfile: docker/Dockerfile}
+    command: ["python", "-m", "services.workers", "--pool", "cpu"]
+    environment:
+      SIMCORE_REDIS_URL: redis://redis:6379/0
+      SIMCORE_REP_PARALLELISM: "2"
+    volumes: ["simcore-data:/data"]
+    depends_on: [redis]
+  worker-gpu:
+    profiles: ["gpu"]
+    build: {context: ., dockerfile: docker/Dockerfile.gpu}
+    environment:
+      SIMCORE_REDIS_URL: redis://redis:6379/0
+      ACCEPT_EULA: "Y"
+    volumes: ["simcore-data:/data"]
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
+    depends_on: [redis]
+volumes:
+  simcore-data:

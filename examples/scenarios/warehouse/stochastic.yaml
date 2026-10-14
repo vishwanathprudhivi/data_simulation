@@ -1,0 +1,20 @@
+# Stochastic demand from fitted distributions plus a demand surge (FR-SCN-02/03).
+id: wh_stochastic
+name: Stochastic demand with surge
+extends: baseline.yaml
+demand:
+  - kind: stochastic
+    stream: demand
+    task_type: pick_and_stage
+    interarrival: {kind: exponential, mean: 24}
+    due_after: {kind: uniform, low: 1800, high: 3600}
+    quantity: {kind: empirical, values: [1, 2, 3], weights: [0.45, 0.35, 0.20]}
+    origins: [pick_face_c01_01, pick_face_c01_06, pick_face_c02_03, pick_face_c02_09,
+              pick_face_c03_04, pick_face_c04_07, pick_face_c05_02, pick_face_c06_11]
+    destinations: [staging_lane_01, staging_lane_02, staging_lane_03, staging_lane_04]
+disruptions:
+  - id: surge
+    type: demand_surge
+    at: 2 h
+    duration: 30 min
+    params: {factor: 1.8}

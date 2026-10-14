@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s
+          --health-retries 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e ".[dev,redis,service,report]"
+      - name: Lint (ruff, mypy, import-linter)
+        run: make lint
+      - name: Test (no GPU, no Redis)
+        run: make coverage
+      - name: Redis queue conformance (AC-DSP-01)
+        env:
+          SIMCORE_REDIS_URL: redis://localhost:6379/0
+        run: make test-redis
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e ".[service]"
+          cd frontend && npm ci --no-audit --no-fund
+      - name: Generated TS types match the schemas (FR-API-08)
+        run: make frontend-types-check
+      - name: Typecheck and build
+        run: cd frontend && npm run build
+      - name: Playwright (AC-UI-01/02)
+        run: |
+          cd frontend && npx playwright install --with-deps chromium
+          npx playwright test

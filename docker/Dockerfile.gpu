@@ -1,0 +1,13 @@
+# GPU worker for kinematic/physics jobs, based on the Isaac Sim container (ADR-001/008).
+# Build on a machine with NGC access:  docker build -f docker/Dockerfile.gpu .
+ARG ISAAC_IMAGE=nvcr.io/nvidia/isaac-sim:5.0.0
+FROM ${ISAAC_IMAGE}
+WORKDIR /app
+ENV SIMCORE_DATA=/data PYTHONUNBUFFERED=1
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY domains ./domains
+COPY services ./services
+COPY schemas ./schemas
+RUN /isaac-sim/python.sh -m pip install --no-cache-dir ".[redis,service]"
+ENTRYPOINT ["/isaac-sim/python.sh", "-m", "services.workers", "--pool", "gpu"]

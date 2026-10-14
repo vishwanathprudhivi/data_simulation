@@ -1,0 +1,6 @@
+schema_version: "1.0"
+agent_types:
+  - id: server
+    description: M/M/c server with exponential service (mean 1 s => mu = 1/s)
+    service_times:
+      default: {kind: exponential, mean: 1.0}

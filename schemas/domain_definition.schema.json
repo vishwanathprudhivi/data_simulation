@@ -1,0 +1,1275 @@
+{
+  "$defs": {
+    "ConstantDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "constant",
+          "default": "constant",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "ConstantDist",
+      "type": "object"
+    },
+    "DimensionDef": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Source column; defaults to id.",
+          "title": "Column"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "categorical",
+          "enum": [
+            "time_bucket",
+            "categorical",
+            "factor",
+            "replication"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hierarchy parent dimension.",
+          "title": "Parent"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "DimensionDef",
+      "type": "object"
+    },
+    "EmpiricalDist": {
+      "additionalProperties": false,
+      "description": "Resample from observed values (optionally weighted).",
+      "properties": {
+        "kind": {
+          "const": "empirical",
+          "default": "empirical",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Values",
+          "type": "array"
+        },
+        "weights": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weights"
+        }
+      },
+      "required": [
+        "values"
+      ],
+      "title": "EmpiricalDist",
+      "type": "object"
+    },
+    "EntityTypeDef": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "name -> type",
+          "title": "Attributes",
+          "type": "object"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "EntityTypeDef",
+      "type": "object"
+    },
+    "EnvelopeBound": {
+      "additionalProperties": false,
+      "description": "Calibrated envelope bound for one lever (FR-SCG-09, FR-DOM-06).",
+      "properties": {
+        "lever": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Lever",
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        }
+      },
+      "required": [
+        "lever"
+      ],
+      "title": "EnvelopeBound",
+      "type": "object"
+    },
+    "ExponentialDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "exponential",
+          "default": "exponential",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mean": {
+          "exclusiveMinimum": 0,
+          "title": "Mean",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mean"
+      ],
+      "title": "ExponentialDist",
+      "type": "object"
+    },
+    "FailureDef": {
+      "additionalProperties": false,
+      "description": "Random breakdowns: time between failures (while busy or idle) and repair time.",
+      "properties": {
+        "mtbf": {
+          "discriminator": {
+            "mapping": {
+              "constant": "#/$defs/ConstantDist",
+              "empirical": "#/$defs/EmpiricalDist",
+              "exponential": "#/$defs/ExponentialDist",
+              "gamma": "#/$defs/GammaDist",
+              "lognormal": "#/$defs/LognormalDist",
+              "normal": "#/$defs/NormalDist",
+              "triangular": "#/$defs/TriangularDist",
+              "uniform": "#/$defs/UniformDist",
+              "weibull": "#/$defs/WeibullDist"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ConstantDist"
+            },
+            {
+              "$ref": "#/$defs/ExponentialDist"
+            },
+            {
+              "$ref": "#/$defs/LognormalDist"
+            },
+            {
+              "$ref": "#/$defs/GammaDist"
+            },
+            {
+              "$ref": "#/$defs/WeibullDist"
+            },
+            {
+              "$ref": "#/$defs/NormalDist"
+            },
+            {
+              "$ref": "#/$defs/UniformDist"
+            },
+            {
+              "$ref": "#/$defs/TriangularDist"
+            },
+            {
+              "$ref": "#/$defs/EmpiricalDist"
+            }
+          ],
+          "title": "Mtbf"
+        },
+        "mttr": {
+          "discriminator": {
+            "mapping": {
+              "constant": "#/$defs/ConstantDist",
+              "empirical": "#/$defs/EmpiricalDist",
+              "exponential": "#/$defs/ExponentialDist",
+              "gamma": "#/$defs/GammaDist",
+              "lognormal": "#/$defs/LognormalDist",
+              "normal": "#/$defs/NormalDist",
+              "triangular": "#/$defs/TriangularDist",
+              "uniform": "#/$defs/UniformDist",
+              "weibull": "#/$defs/WeibullDist"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ConstantDist"
+            },
+            {
+              "$ref": "#/$defs/ExponentialDist"
+            },
+            {
+              "$ref": "#/$defs/LognormalDist"
+            },
+            {
+              "$ref": "#/$defs/GammaDist"
+            },
+            {
+              "$ref": "#/$defs/WeibullDist"
+            },
+            {
+              "$ref": "#/$defs/NormalDist"
+            },
+            {
+              "$ref": "#/$defs/UniformDist"
+            },
+            {
+              "$ref": "#/$defs/TriangularDist"
+            },
+            {
+              "$ref": "#/$defs/EmpiricalDist"
+            }
+          ],
+          "title": "Mttr"
+        }
+      },
+      "required": [
+        "mtbf",
+        "mttr"
+      ],
+      "title": "FailureDef",
+      "type": "object"
+    },
+    "GammaDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "gamma",
+          "default": "gamma",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scale": {
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "shape": {
+          "exclusiveMinimum": 0,
+          "title": "Shape",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "shape",
+        "scale"
+      ],
+      "title": "GammaDist",
+      "type": "object"
+    },
+    "LeverDef": {
+      "additionalProperties": false,
+      "properties": {
+        "choices": {
+          "items": {},
+          "title": "Choices",
+          "type": "array"
+        },
+        "default": {
+          "default": null,
+          "title": "Default"
+        },
+        "depends_on": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "path": {
+          "description": "Scenario path the lever sets, e.g. 'fleet.server.count'.",
+          "title": "Path",
+          "type": "string"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "synonyms": {
+          "description": "Words users say for this lever (compile hints).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Synonyms",
+          "type": "array"
+        },
+        "type": {
+          "enum": [
+            "int",
+            "float",
+            "bool",
+            "enum",
+            "duration",
+            "distribution"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "path",
+        "type"
+      ],
+      "title": "LeverDef",
+      "type": "object"
+    },
+    "LognormalDist": {
+      "additionalProperties": false,
+      "description": "Lognormal with ``mu``/``sigma`` of the underlying normal (natural log).",
+      "properties": {
+        "kind": {
+          "const": "lognormal",
+          "default": "lognormal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mu": {
+          "title": "Mu",
+          "type": "number"
+        },
+        "sigma": {
+          "exclusiveMinimum": 0,
+          "title": "Sigma",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mu",
+        "sigma"
+      ],
+      "title": "LognormalDist",
+      "type": "object"
+    },
+    "MetricDef": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "default": "mean",
+          "enum": [
+            "mean",
+            "sum",
+            "ratio_of_means",
+            "p50",
+            "p90",
+            "p99",
+            "min",
+            "max"
+          ],
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "allowed_dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Dimensions",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "direction": {
+          "default": "neutral",
+          "enum": [
+            "higher_is_better",
+            "lower_is_better",
+            "neutral"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/$defs/NumberFormat"
+        },
+        "formula": {
+          "description": "KPI key, or governed expression over event-log columns.",
+          "title": "Formula",
+          "type": "string"
+        },
+        "grain": {
+          "default": "replication",
+          "enum": [
+            "replication",
+            "task",
+            "agent",
+            "time_bucket"
+          ],
+          "title": "Grain",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "default": "kpi",
+          "enum": [
+            "kpi",
+            "event_log"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "statistical_treatment": {
+          "default": "replication_mean_ci",
+          "enum": [
+            "replication_mean_ci",
+            "ratio_of_means",
+            "none"
+          ],
+          "title": "Statistical Treatment",
+          "type": "string"
+        },
+        "synonyms": {
+          "description": "Words users say for it.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Synonyms",
+          "type": "array"
+        },
+        "unit": {
+          "description": "SI unit symbol or '1' for dimensionless.",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "unit",
+        "formula"
+      ],
+      "title": "MetricDef",
+      "type": "object"
+    },
+    "NormalDist": {
+      "additionalProperties": false,
+      "description": "Normal, optionally truncated below at ``min`` by resampling.",
+      "properties": {
+        "kind": {
+          "const": "normal",
+          "default": "normal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "sd": {
+          "exclusiveMinimum": 0,
+          "title": "Sd",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mean",
+        "sd"
+      ],
+      "title": "NormalDist",
+      "type": "object"
+    },
+    "NumberFormat": {
+      "additionalProperties": false,
+      "properties": {
+        "decimals": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Decimals",
+          "type": "integer"
+        },
+        "kind": {
+          "default": "number",
+          "enum": [
+            "number",
+            "percent",
+            "duration",
+            "integer"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "NumberFormat",
+      "type": "object"
+    },
+    "ProcessDef": {
+      "additionalProperties": false,
+      "properties": {
+        "routings": {
+          "items": {
+            "$ref": "#/$defs/RoutingDef"
+          },
+          "title": "Routings",
+          "type": "array"
+        },
+        "stations": {
+          "items": {
+            "$ref": "#/$defs/StationDef"
+          },
+          "title": "Stations",
+          "type": "array"
+        }
+      },
+      "title": "ProcessDef",
+      "type": "object"
+    },
+    "RoutingDef": {
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        },
+        "work_item_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Work Item Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "work_item_type",
+        "steps"
+      ],
+      "title": "RoutingDef",
+      "type": "object"
+    },
+    "StationDef": {
+      "additionalProperties": false,
+      "description": "Tier-0 ``process_network`` station (FR-DOM-01).",
+      "properties": {
+        "batch_size": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "buffer_capacity": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Max items waiting; full = upstream blocks.",
+          "title": "Buffer Capacity"
+        },
+        "capacity": {
+          "default": 1,
+          "description": "Parallel servers.",
+          "minimum": 1,
+          "title": "Capacity",
+          "type": "integer"
+        },
+        "changeover": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Setup time when the item type changes.",
+          "title": "Changeover"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "failures": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FailureDef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "resource_type": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Operator type required while working (from the fleet).",
+          "title": "Resource Type"
+        },
+        "service_time": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "constant": "#/$defs/ConstantDist",
+                  "empirical": "#/$defs/EmpiricalDist",
+                  "exponential": "#/$defs/ExponentialDist",
+                  "gamma": "#/$defs/GammaDist",
+                  "lognormal": "#/$defs/LognormalDist",
+                  "normal": "#/$defs/NormalDist",
+                  "triangular": "#/$defs/TriangularDist",
+                  "uniform": "#/$defs/UniformDist",
+                  "weibull": "#/$defs/WeibullDist"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ConstantDist"
+                },
+                {
+                  "$ref": "#/$defs/ExponentialDist"
+                },
+                {
+                  "$ref": "#/$defs/LognormalDist"
+                },
+                {
+                  "$ref": "#/$defs/GammaDist"
+                },
+                {
+                  "$ref": "#/$defs/WeibullDist"
+                },
+                {
+                  "$ref": "#/$defs/NormalDist"
+                },
+                {
+                  "$ref": "#/$defs/UniformDist"
+                },
+                {
+                  "$ref": "#/$defs/TriangularDist"
+                },
+                {
+                  "$ref": "#/$defs/EmpiricalDist"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per batch; required unless the scenario overrides it.",
+          "title": "Service Time"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "StationDef",
+      "type": "object"
+    },
+    "TriangularDist": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "kind": {
+          "const": "triangular",
+          "default": "triangular",
+          "title": "Kind",
+          "type": "string"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "mode": {
+          "title": "Mode",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "low",
+        "mode",
+        "high"
+      ],
+      "title": "TriangularDist",
+      "type": "object"
+    },
+    "UniformDist": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "kind": {
+          "const": "uniform",
+          "default": "uniform",
+          "title": "Kind",
+          "type": "string"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "UniformDist",
+      "type": "object"
+    },
+    "WeibullDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "weibull",
+          "default": "weibull",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scale": {
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "shape": {
+          "exclusiveMinimum": 0,
+          "title": "Shape",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "shape",
+        "scale"
+      ],
+      "title": "WeibullDist",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:domain_definition:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asset_bindings": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Asset Bindings",
+      "type": "object"
+    },
+    "default_distributions": {
+      "additionalProperties": {
+        "discriminator": {
+          "mapping": {
+            "constant": "#/$defs/ConstantDist",
+            "empirical": "#/$defs/EmpiricalDist",
+            "exponential": "#/$defs/ExponentialDist",
+            "gamma": "#/$defs/GammaDist",
+            "lognormal": "#/$defs/LognormalDist",
+            "normal": "#/$defs/NormalDist",
+            "triangular": "#/$defs/TriangularDist",
+            "uniform": "#/$defs/UniformDist",
+            "weibull": "#/$defs/WeibullDist"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/ConstantDist"
+          },
+          {
+            "$ref": "#/$defs/ExponentialDist"
+          },
+          {
+            "$ref": "#/$defs/LognormalDist"
+          },
+          {
+            "$ref": "#/$defs/GammaDist"
+          },
+          {
+            "$ref": "#/$defs/WeibullDist"
+          },
+          {
+            "$ref": "#/$defs/NormalDist"
+          },
+          {
+            "$ref": "#/$defs/UniformDist"
+          },
+          {
+            "$ref": "#/$defs/TriangularDist"
+          },
+          {
+            "$ref": "#/$defs/EmpiricalDist"
+          }
+        ]
+      },
+      "title": "Default Distributions",
+      "type": "object"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/DimensionDef"
+      },
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "entity_types": {
+      "items": {
+        "$ref": "#/$defs/EntityTypeDef"
+      },
+      "title": "Entity Types",
+      "type": "array"
+    },
+    "envelope": {
+      "items": {
+        "$ref": "#/$defs/EnvelopeBound"
+      },
+      "title": "Envelope",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "levers": {
+      "items": {
+        "$ref": "#/$defs/LeverDef"
+      },
+      "title": "Levers",
+      "type": "array"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/MetricDef"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "plugin": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Python module for Tier 1/2 hooks.",
+      "title": "Plugin"
+    },
+    "policies": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Policies",
+      "type": "array"
+    },
+    "process": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProcessDef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "resource_types": {
+      "items": {
+        "$ref": "#/$defs/EntityTypeDef"
+      },
+      "title": "Resource Types",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "tier": {
+      "enum": [
+        0,
+        1,
+        2
+      ],
+      "title": "Tier",
+      "type": "integer"
+    },
+    "version": {
+      "description": "Domain version recorded by every scenario (FR-DOM-10).",
+      "title": "Version",
+      "type": "string"
+    },
+    "work_item_types": {
+      "items": {
+        "$ref": "#/$defs/EntityTypeDef"
+      },
+      "title": "Work Item Types",
+      "type": "array"
+    },
+    "zone_semantics": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Zone Semantics",
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "version",
+    "tier"
+  ],
+  "title": "DomainDefinition",
+  "type": "object",
+  "x-schema-version": "1.0"
+}
