@@ -167,12 +167,34 @@ class SqlRequest(BaseModel):
     max_rows: int = Field(default=1000, ge=1, le=20000)
 
 
+class GapRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    domain: str = Field(max_length=100)
+    request: str = Field(min_length=1, max_length=2000)
+    detail: str = Field(default="", max_length=4000)
+
+
 class CompileRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=4000)
     scenario: ScenarioRef
     replications: int | None = Field(default=None, ge=1, le=1000)
     mode: str = "logical"
+
+
+class ChatStartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scenario: ScenarioRef | None = None
+
+
+class ChatMessageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=8000)
+
+
+class ChatConfirmRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action_id: str
 
 
 class AnalysisRequest(BaseModel):
@@ -309,6 +331,14 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
     def gaps(domain: str | None = None, who: Caller = Depends(caller)) -> list[dict[str, Any]]:
         return store.gaps(domain)
 
+    @app.post(f"{API}/gaps", status_code=201)
+    def add_gap(body: GapRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Domain-extension request for the domain owners (FR-DOM-12)."""
+        gap_id = store.add_gap(
+            who.workspace, body.domain, body.request, {"detail": body.detail, "user": who.user}
+        )
+        return {"id": gap_id}
+
     # ------------------------------------------------------------------ scenarios (FR-SCG-08)
 
     def resolve(ref: ScenarioRef, who: Caller) -> tuple[ScenarioBundle, dict[str, Any]]:
@@ -370,10 +400,14 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
     @app.post(f"{API}/scenarios/validate")
     def validate_scenario(ref: ScenarioRef, who: Caller = Depends(caller)) -> dict[str, Any]:
         bundle, info = resolve(ref, who)
-        plugins.get(bundle.scenario.domain).validate_scenario(bundle)
+        plugin = plugins.get(bundle.scenario.domain)
+        plugin.validate_scenario(bundle)
+        from simcore.catalog import lever_values
+
         return {
             "valid": True,
             "config_hash": bundle.config_hash,
+            "lever_values": lever_values(bundle, plugin),
             "scenario": bundle.scenario.model_dump(mode="json"),
             **info,
         }
@@ -615,7 +649,7 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
         res = ScenarioCompiler(reasoning, store).compile(
             body.text, base, plugin, workspace=who.workspace, replications=body.replications
         )
-        out = res.to_dict()
+        out = {"domain": plugin.name, **res.to_dict()}
         store.audit(
             "scenario.compile",
             user=who.user,
@@ -654,12 +688,106 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
         plugin = plugins.get(bundle.scenario.domain)
         catalog = {m.id: m for m in metric_catalog(plugin).metrics}
         flags = extrapolated_variants(data, bundle, plugin)
-        result = synthesize_findings(data, catalog, extrapolated=flags)
+        spec, _, _ = JobService.load(job)
+        definition = plugin.domain_definition()
+        own = [m.id for m in definition.metrics] if definition else []
+        headline = list(spec.kpis) or [
+            m for m in data["metrics"] if m in own and catalog[m].direction != "neutral"
+        ]
+        result = synthesize_findings(data, catalog, extrapolated=flags, headline=headline or None)
         story = narrate(result, catalog)
         return {
             "findings": result.model_dump(mode="json"),
             "narrative": {"text": story.text, "template": story.template, "refs": story.refs},
         }
+
+    # ------------------------------------------------------------------ chat (M10)
+
+    chats: dict[str, Any] = {}
+
+    def gateway(request: Request) -> Any:
+        """Tools reach the API in-process with the caller's own credentials (FR-CHAT-01)."""
+        from fastapi.testclient import TestClient
+
+        headers = {
+            k: v
+            for k, v in request.headers.items()
+            if k.lower() in ("authorization", "x-workspace")
+        }
+        inner = TestClient(app, raise_server_exceptions=False, headers=headers)
+
+        def call(method: str, path: str, body: Any, params: Any) -> tuple[int, Any]:
+            r = inner.request(method, f"{API}{path}", json=body, params=params or None)
+            try:
+                data = r.json()
+            except ValueError:
+                data = {"detail": r.text}
+            return r.status_code, data
+
+        return call
+
+    def own_chat(session_id: str, who: Caller, request: Request) -> Any:
+        sess = chats.get(session_id)
+        if sess is None or sess.state.workspace != who.workspace:
+            raise HTTPException(404, f"chat session {session_id!r} not found")
+        sess.api = gateway(request)
+        return sess
+
+    def save_chat(sess: Any, who: Caller) -> None:
+        store.save_chat(sess.id, who.workspace, who.user, sess.to_payload())
+
+    @app.post(f"{API}/chat/sessions", status_code=201)
+    def chat_start(
+        body: ChatStartRequest, request: Request, who: Caller = Depends(caller)
+    ) -> dict[str, Any]:
+        from services.chat.session import ChatSession
+
+        sess = ChatSession(reasoning, gateway(request), workspace=who.workspace)
+        if body.scenario is not None:
+            bundle, _ = resolve(body.scenario, who)
+            sess.state.scenario = body.scenario.model_dump(mode="json", exclude_defaults=True)
+            sess.state.domain = bundle.scenario.domain
+        chats[sess.id] = sess
+        save_chat(sess, who)
+        store.audit("chat.start", user=who.user, workspace=who.workspace, target=sess.id)
+        return {"session_id": sess.id, "state": sess.state.to_dict()}
+
+    @app.post(f"{API}/chat/sessions/{{session_id}}/messages")
+    def chat_message(
+        session_id: str, body: ChatMessageRequest, request: Request,
+        who: Caller = Depends(caller),
+    ) -> dict[str, Any]:  # fmt: skip
+        sess = own_chat(session_id, who, request)
+        turn = sess.send(body.text)
+        save_chat(sess, who)
+        return {**turn.to_dict(), "state": sess.state.to_dict()}
+
+    @app.post(f"{API}/chat/sessions/{{session_id}}/confirm")
+    def chat_confirm(
+        session_id: str, body: ChatConfirmRequest, request: Request,
+        who: Caller = Depends(caller),
+    ) -> dict[str, Any]:  # fmt: skip
+        """The user (not the model) approves a pending launch (FR-SCG-07)."""
+        from services.chat.tools import ToolError
+
+        sess = own_chat(session_id, who, request)
+        try:
+            job = sess.confirm(body.action_id)
+        except ToolError as exc:
+            raise HTTPException(exc.status, str(exc)) from exc
+        save_chat(sess, who)
+        store.audit("chat.confirm", user=who.user, workspace=who.workspace, target=job["id"])
+        return {"job": job, "state": sess.state.to_dict()}
+
+    @app.get(f"{API}/chat/sessions/{{session_id}}")
+    def chat_get(session_id: str, request: Request, who: Caller = Depends(caller)) -> Any:
+        sess = chats.get(session_id)
+        if sess is not None and sess.state.workspace == who.workspace:
+            return sess.to_payload()
+        row = store.chat(session_id, who.workspace)
+        if row is None:
+            raise HTTPException(404, f"chat session {session_id!r} not found")
+        return json.loads(row["payload_json"])
 
     # ------------------------------------------------------------------ semantic layer (M8)
 

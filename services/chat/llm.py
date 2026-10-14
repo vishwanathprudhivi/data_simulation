@@ -176,9 +176,9 @@ def make_client(spec: str | None = None) -> ReasoningClient:
     if kind == "disabled":
         return DisabledReasoningClient()
     if kind == "heuristic":
-        from services.chat.heuristic import HeuristicCompilerClient
+        from services.chat.agent import HeuristicChatClient
 
-        return HeuristicCompilerClient()
+        return HeuristicChatClient()
     if kind == "anthropic":
         return AnthropicReasoningClient(model=arg or DEFAULT_MODEL)
     if kind == "replay":

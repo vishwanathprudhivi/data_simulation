@@ -204,7 +204,7 @@ def compile_text(
 
     noun = (
         r"(?P<noun>[a-z][a-z \-]*?)"
-        r"(?=\s+(?:and|to|by|vs|versus|compared|then|with|on|in|for)\b|[.,;]|$)"
+        r"(?=\s+(?:and|to|by|vs|versus|compared|then|with|on|in|for)\b|[.,;?!]|$)"
     )
     # relative changes
     for m in re.finditer(
@@ -301,10 +301,8 @@ def compile_text(
             out["intent"] = "compare"
         else:
             out["intent"] = "clarify"
-            ids = sorted(lv.items)
-            out["ambiguities"].append(
-                f"I could not map the request to a lever; supported levers are {ids}"
-            )
+            names = ", ".join(f"{i.get('display_name', i['id'])} ({i['id']})" for i in levers)
+            out["ambiguities"].append(f"which of these should change, and how: {names}?")
     return out
 
 

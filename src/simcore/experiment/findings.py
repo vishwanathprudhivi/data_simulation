@@ -192,7 +192,8 @@ def narrate(findings: Findings, catalog: Mapping[str, MetricDef]) -> Narrative:
         return f"{{{{{ref}:{field}}}}}"
 
     lines.append(
-        f"Compared with {findings.baseline} over {findings.n_replications} paired "
+        f"Compared with {findings.baseline} over {findings.n_replications} "
+        f"{'paired ' if all(c.paired for c in findings.comparisons) else ''}"
         f"replications ({conf}% confidence, {findings.fidelity.screen} mode):"
     )
     for c in findings.comparisons:
@@ -213,7 +214,7 @@ def narrate(findings: Findings, catalog: Mapping[str, MetricDef]) -> Narrative:
             verdict = f"changes {name} by {mean} ({conf}% CI {lo} to {hi})"
         else:
             word = "improves" if better else "worsens"
-            verdict = f"{word} {name} by {mean} ({conf}% CI {lo} to {hi})"
+            verdict = f"{word} {name}: change {mean} ({conf}% CI {lo} to {hi})"
         extra = (
             " This variant is outside the calibrated envelope, so treat it as extrapolated."
             if c.extrapolated

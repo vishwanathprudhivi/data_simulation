@@ -22,6 +22,7 @@ onboarding kit.
 | M7 Service layer (FastAPI, jobs, SSE, cache) | done |
 | M8 Semantic layer & charts (DuckDB, Vega-Lite) | done |
 | M9 Scenario compiler, Findings & narrative | done |
+| M10 Conversational analyst (tools, grounding, golden set) | done |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -71,7 +72,17 @@ curl -s localhost:8000/api/v1/compile -H 'content-type: application/json' -d '{
 # after the job completes: GET /api/v1/jobs/<id>/findings  (Findings + narrative)
 ```
 
-The compiler uses a deterministic rule-based client by default; set
+Chat with the analyst (same tools and permissions as the API):
+
+```bash
+S=$(curl -s localhost:8000/api/v1/chat/sessions -H 'content-type: application/json' \
+  -d '{"scenario": {"example": "scenarios/warehouse/baseline.yaml"}}' | jq -r .session_id)
+curl -s localhost:8000/api/v1/chat/sessions/$S/messages -H 'content-type: application/json' \
+  -d '{"text": "add 5 jacks and compare to baseline"}' | jq -r .reply
+# then: "run it", "is it done?", "why did on-time rate change in variant A?", "chart ..."
+```
+
+The compiler and analyst use a deterministic rule-based client by default; set
 `SIMCORE_REASONING=anthropic` (and `ANTHROPIC_API_KEY`) to compile with Claude.
 
 From Python:
