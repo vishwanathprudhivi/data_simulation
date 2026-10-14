@@ -269,8 +269,10 @@ class DispatchingModel(SimModel):
                 ctx.emit(
                     EventType.AGENT_CREATED,
                     agent=agent_id,
+                    location=start,
                     agent_type=entry.agent_type,
                     speed_multiplier=mult,
+                    position=list(position) if position is not None else None,
                 )
                 ctx.emit(EventType.AGENT_STATE, agent=agent_id, state="idle")
 

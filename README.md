@@ -16,6 +16,7 @@ onboarding kit.
 | M1 Logical core | done |
 | M2 Experiment layer | done |
 | M3 Facility + interaction (warehouse domain) | done |
+| M4 Omniverse adapter | code done; Isaac/GPU verification pending |
 | M4 – M14 | in progress |
 
 ## Quick start

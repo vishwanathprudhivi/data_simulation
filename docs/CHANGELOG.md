@@ -1,5 +1,33 @@
 # Changelog
 
+## M4 – Omniverse adapter (2026-10-14)
+
+**Exit gate:** AC-X-01 and AC-X-02 need Isaac Sim on a GPU and are **not yet run**
+(tests exist, marked `isaac`, skipped in this CPU-only environment). CPU-side
+checks pass: the kinematic backend drives a stage each step, its event log equals
+the logical one apart from `sim.start` (AC-X-02 holds at 0% in this design), and
+replay from the event log reproduces live positions.
+
+Implemented:
+- FR-ENG-09 `kinematic` / experimental `physics` backend (`KinematicBackend`) on a
+  narrow `StageAPI`; `IsaacStage` (Isaac Sim 5.x standalone: `SimulationApp`,
+  `omni.usd`, `pxr`) confined to `adapters/omniverse/compat.py`.
+- Fixed-step advance by default in non-logical modes (`--step`, 0.5 s default).
+- FR-AGT-06 asset binding through plug-in `asset_bindings` (placeholder capsules,
+  BRD Q4); FR-DOM-07 (S) minimal USD scene from the manifest (floor meshes + edge
+  strips) when no stage is supplied; optional USD export (`SIMCORE_EXPORT_USD`).
+- FR-OBS-04 replay: trajectories rebuilt from `agent.move` records
+  (`simcore.core.obs.replay`), `simcore replay --at T --scenario S` prints positions
+  and states, `replay_to_stage` drives a stage from a log.
+- Shared `TrajectoryStore` for all backends; `agent.created` now logs the start
+  position, `agent.move` logs the planned arrival; yield reversals log their
+  forward leg.
+
+Decisions: ADR-008; ADR-001 updated (pin still provisional).
+
+Deferrals: running on Isaac Sim (`make test-isaac`), PhysX-driven `physics` mode and
+its calibration use (M14), live viewport control (M13).
+
 ## M3 – Facility + interaction (2026-10-14)
 
 **Exit gate:** AC-FAC-01, AC-INT-01, AC-INT-02 — passing. AC-ENG-01/02 re-run on the

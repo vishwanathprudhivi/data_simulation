@@ -39,6 +39,9 @@ __all__ = ["Engine", "EngineStateError", "RunResult", "SimulationTimeoutError"]
 log = logging.getLogger(__name__)
 
 BackendFactory = Callable[[str], WorldBackend]
+
+#: Fixed step (s) used by kinematic/physics runs when none is given.
+DEFAULT_RENDER_STEP = 0.5
 QueueFactory = Callable[[], TaskQueue]
 
 
@@ -147,7 +150,8 @@ class Engine:
         if self.backend is not None:
             self.backend.teardown()
         self.backend = self.backend_factory(self.mode)
-        self.backend.build(self.bundle.facility)
+        assert self.plugin is not None
+        self.backend.build(self.bundle.facility, self.plugin.asset_bindings())
         self._state = "built"
         return self
 
@@ -160,7 +164,7 @@ class Engine:
         if self._state != "built":
             self.backend.teardown()
             self.backend = self.backend_factory(self.mode)
-            self.backend.build(self.bundle.facility)
+            self.backend.build(self.bundle.facility, self.plugin.asset_bindings())
         self.ctx = SimContext(
             bundle=self.bundle,
             clock=SimClock(0.0),
@@ -309,9 +313,19 @@ class Engine:
     # ------------------------------------------------------------------ convenience
 
     def run_replication(
-        self, seed: int | None = None, replication_id: int = 0, until: float | None = None
+        self,
+        seed: int | None = None,
+        replication_id: int = 0,
+        until: float | None = None,
+        step: float | None = None,
     ) -> RunResult:
-        """``reset -> run -> collect`` for an already loaded and built engine."""
+        """``reset -> run -> collect`` for an already loaded and built engine.
+
+        Non-logical modes default to fixed-step advance (``step`` seconds, default
+        ``DEFAULT_RENDER_STEP``) so the stage is updated as the run progresses.
+        """
         if self._state == "loaded":
             self.build_world()
-        return self.reset(seed, replication_id).run(until).collect()
+        if step is None and self.mode != "logical":
+            step = DEFAULT_RENDER_STEP
+        return self.reset(seed, replication_id).run(until, step=step).collect()

@@ -42,12 +42,13 @@ def run_scenario(
     overrides: Mapping[str, Any] | None = None,
     plugins: PluginRegistry | None = None,
     jsonl: bool = False,
+    step: float | None = None,
 ) -> RunResult:
     """Run one replication; write outputs under ``out`` when given (AC-ENG-01)."""
     engine = default_engine(mode, plugins)
     try:
         engine.load_config(scenario, overrides).build_world()
-        result = engine.run_replication(seed, replication)
+        result = engine.run_replication(seed, replication, step=step)
     finally:
         engine.teardown()
     if out is not None:

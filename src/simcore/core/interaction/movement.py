@@ -392,6 +392,7 @@ class MovementSystem:
             source=occ.source,
             target=occ.target,
             entry=occ.entry,
+            arrive=occ.planned_exit,
             length=edge.length,
             free_speed=occ.free_speed,
             speed=edge.length / (now - occ.entry) if now > occ.entry else None,
@@ -656,6 +657,20 @@ class MovementSystem:
         # reverse along the held edge back to where it was entered
         occ = self.occupants[held][yielder]
         edge = self.nav.edges[held]
+        self.ctx.emit(
+            EventType.AGENT_MOVE,
+            agent=yielder,
+            task=trip.agent.task.id if trip.agent.task else None,
+            location=held,
+            source=occ.source,
+            target=occ.target,
+            entry=occ.entry,
+            arrive=occ.planned_exit,
+            length=edge.length,
+            free_speed=occ.free_speed,
+            speed=None,
+            yielded=True,
+        )
         assert occ.source is not None and occ.target is not None
         back = Step(edge, occ.target, occ.source)
         free = self._free_speed(trip, edge)

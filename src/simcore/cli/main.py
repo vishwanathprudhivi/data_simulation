@@ -93,6 +93,12 @@ def validate(path: Path, kind: str | None, plugins: tuple[str, ...]) -> None:
 @click.option("--out", type=click.Path(path_type=Path), default=Path("runs"))
 @click.option("--experiment-id", default="adhoc")
 @click.option("--jsonl", is_flag=True, help="Also write events.jsonl for debugging.")
+@click.option(
+    "--step",
+    type=float,
+    default=None,
+    help="Fixed step (s); default event-driven (logical) or 0.5 s (kinematic).",
+)
 @click.option("--set", "sets", multiple=True, help="Override 'path=value' (YAML value).")
 @click.option("--plugin", "plugins", multiple=True)
 def run(
@@ -103,6 +109,7 @@ def run(
     out: Path,
     experiment_id: str,
     jsonl: bool,
+    step: float | None,
     sets: tuple[str, ...],
     plugins: tuple[str, ...],
 ) -> None:
@@ -128,6 +135,7 @@ def run(
             out=rep_dir,
             plugins=_plugins(plugins),
             jsonl=jsonl,
+            step=step,
         )
     except Exception as exc:
         _fail(exc)
@@ -308,9 +316,16 @@ def warmup(
 @cli.command()
 @click.argument("events", type=click.Path(exists=True, path_type=Path))
 @click.option("--at", "times", type=float, multiple=True, help="Sim-times to report state at.")
-def replay(events: Path, times: tuple[float, ...]) -> None:
-    """Summarize a run's event log without re-simulating (FR-OBS-04; viewport replay in M4/M11)."""
-    from simcore.core.obs.eventlog import EventLog, EventType
+@click.option(
+    "--scenario",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Scenario of the run; adds agent positions from its facility.",
+)
+def replay(events: Path, times: tuple[float, ...], scenario: Path | None) -> None:
+    """Replay a run from its event log without re-simulating (FR-OBS-04)."""
+    from simcore.core.obs.eventlog import EventLog
+    from simcore.core.obs.replay import agent_states_at, snapshot
 
     log_ = EventLog.from_parquet(events)
     counts: dict[str, int] = {}
@@ -319,14 +334,19 @@ def replay(events: Path, times: tuple[float, ...]) -> None:
     click.echo(
         json.dumps({"records": len(log_), "by_type": dict(sorted(counts.items()))}, indent=2)
     )
+    nav = None
+    if scenario is not None:
+        from simcore.core.facility.graph import NavGraph
+
+        fac = load_scenario(scenario).facility
+        nav = NavGraph(fac) if fac is not None else None
     for at in times:
-        states: dict[str, str] = {}
-        for r in log_.of_type(EventType.AGENT_STATE):
-            if r.time > at:
-                break
-            if r.agent:
-                states[r.agent] = str(r.data.get("state"))
-        click.echo(f"t={at}: " + json.dumps(states, sort_keys=True))
+        if nav is not None:
+            snap = snapshot(log_, nav, at)
+            click.echo(f"t={at}: " + json.dumps(snap, sort_keys=True, default=list))
+        else:
+            states = {a: v["state"] for a, v in agent_states_at(log_, at).items()}
+            click.echo(f"t={at}: " + json.dumps(states, sort_keys=True))
 
 
 @cli.group()
