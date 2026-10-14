@@ -19,6 +19,7 @@ onboarding kit.
 | M4 Omniverse adapter | code done; Isaac/GPU verification pending |
 | M5 Dispatch & policies (Redis, plans, solver) | done |
 | M6 Domain definitions, catalogs, Tier-0 process network | done |
+| M7 Service layer (FastAPI, jobs, SSE, cache) | done |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -50,6 +51,13 @@ make lint test                  # ruff, mypy, import-linter; tests (no GPU/Redis
 ```
 
 See [`docs/guides/experiments.md`](docs/guides/experiments.md).
+
+Service (API at http://127.0.0.1:8000/api/v1/docs):
+
+```bash
+make api                         # in-process workers, examples seeded into the library
+docker compose up                # API + Redis + CPU worker
+```
 
 From Python:
 

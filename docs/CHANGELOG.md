@@ -1,5 +1,26 @@
 # Changelog
 
+## M7 – Service layer (2026-10-14)
+
+**Exit gate:** AC-API-01 — an experiment submitted via the API streams progress over
+SSE and returns results; resubmitting the identical spec is served from cache
+without re-running. Passing (also with the Redis broker + standalone worker).
+
+Implemented: FR-API-01 REST API (domains/catalogs, schemas, scenario library,
+validation, estimate, experiments, jobs, SSE events, summaries, reports, runs,
+artifacts, event-log paging, analyses, audit, gaps); FR-API-02 job lifecycle and
+idempotent submission; FR-API-03 CPU/GPU pools, priorities, workspace quotas,
+cancellation, per-job timeouts, in-process and Redis brokers with a standalone
+worker; FR-API-04 SQLite/Postgres metadata and local/S3 artifact stores; FR-API-05
+result cache; FR-API-06 estimator from a benchmark table; FR-API-07 workspaces and
+basic auth (bearer/Basic); FR-API-08 versioned `/api/v1` + schema endpoints;
+FR-API-09 audit log; FR-SCG-07 confirmation gate (Q13 thresholds); FR-SCG-08
+scenario library (save, version, tag, fork via parent, pinned baseline per domain,
+examples seeded); NFR-14 path restrictions on uploads, rate limiting; Docker images
+and compose file.
+
+Decisions: ADR-011.
+
 ## M6 – Domain definitions & catalogs (2026-10-14)
 
 **Exit gate:** AC-DOM-03 (backend part: a lever added to `domain.yaml` appears in the

@@ -41,6 +41,7 @@ from simcore.specs.experiment import ExperimentSpec
 
 __all__ = [
     "ComparisonResult",
+    "ExperimentCancelled",
     "ExperimentResult",
     "ExperimentRunner",
     "MetricSummary",
@@ -54,6 +55,10 @@ log = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------------- jobs
+
+
+class ExperimentCancelled(RuntimeError):
+    """The experiment was cancelled before all replications finished."""
 
 
 @dataclass(frozen=True)
@@ -404,6 +409,7 @@ class ExperimentRunner:
         retries: int = 0,
         jsonl: bool = False,
         progress: Progress | None = None,
+        cancel: Any = None,
     ) -> None:
         if plugins is None:
             from simcore.api.engine import default_plugins
@@ -418,6 +424,7 @@ class ExperimentRunner:
         self.out_root = out_root
         self.jsonl = jsonl
         self.progress = progress
+        self.cancel = cancel  # anything with is_set(), e.g. threading.Event
         self.variants = build_variants(spec, base)
         plugin = plugins.get(base.scenario.domain)
         for v in self.variants:  # fail fast before running anything (FR-ENG-08)
@@ -475,8 +482,13 @@ class ExperimentRunner:
                     )
                 )
 
+        def cancelled() -> bool:
+            return self.cancel is not None and bool(self.cancel.is_set())
+
         if self.parallelism <= 1 or len(jobs) <= 1:
             for job in jobs:
+                if cancelled():
+                    raise ExperimentCancelled(f"experiment {self.spec.id} cancelled")
                 done(run_job(job))
         else:
             ctx = multiprocessing.get_context("spawn")
@@ -484,6 +496,10 @@ class ExperimentRunner:
             with ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as pool:
                 futures = [pool.submit(run_job, job) for job in jobs]
                 for job, fut in zip(jobs, futures):  # submission order: deterministic output
+                    if cancelled():
+                        for f in futures:
+                            f.cancel()
+                        raise ExperimentCancelled(f"experiment {self.spec.id} cancelled")
                     try:
                         done(fut.result())
                     except Exception as exc:  # worker crashed (e.g. killed)
