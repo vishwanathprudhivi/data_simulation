@@ -16,10 +16,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 from pydantic import TypeAdapter
 from scipy import stats
 
 from simcore.specs.distributions import DistributionSpec, unit_factor
+
+FloatArray = npt.NDArray[np.float64]
 
 __all__ = ["CANDIDATES", "FitCandidate", "FitReport", "fit_distributions", "read_samples"]
 
@@ -83,7 +86,7 @@ class FitReport:
         }
 
 
-def _frozen(name: str, x: np.ndarray) -> tuple[Any, dict[str, float], dict[str, Any], int]:
+def _frozen(name: str, x: FloatArray) -> tuple[Any, dict[str, float], dict[str, Any], int]:
     """Return (scipy frozen dist, params, spec dict, n_params) fitted by MLE."""
     if name == "exponential":
         mean = float(x.mean())
@@ -119,7 +122,7 @@ def _frozen(name: str, x: np.ndarray) -> tuple[Any, dict[str, float], dict[str, 
     raise ValueError(f"unknown candidate {name!r}; choose from {CANDIDATES}")
 
 
-def _anderson_darling(sorted_x: np.ndarray, dist: Any) -> float:
+def _anderson_darling(sorted_x: FloatArray, dist: Any) -> float:
     n = len(sorted_x)
     cdf = np.clip(dist.cdf(sorted_x), 1e-300, 1 - 1e-16)
     i = np.arange(1, n + 1)

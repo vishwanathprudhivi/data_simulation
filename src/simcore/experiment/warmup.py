@@ -14,12 +14,15 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 
 from simcore.adapters import get_backend
 from simcore.core.config import ScenarioBundle
 from simcore.core.engine import Engine
 from simcore.core.obs.eventlog import EventLog, EventType
 from simcore.core.plugins import PluginRegistry
+
+FloatArray = npt.NDArray[np.float64]
 
 __all__ = [
     "SIGNALS",
@@ -37,7 +40,7 @@ def _bucket_count(end: float, bucket: float) -> int:
     return max(1, math.ceil(end / bucket - 1e-9))
 
 
-def signal_series(log: EventLog, signal: str, bucket: float, end: float) -> np.ndarray:
+def signal_series(log: EventLog, signal: str, bucket: float, end: float) -> FloatArray:
     """Per-bucket values of ``signal`` for one replication (NaN where undefined)."""
     if bucket <= 0:
         raise ValueError("bucket must be > 0")
@@ -86,7 +89,7 @@ def signal_series(log: EventLog, signal: str, bucket: float, end: float) -> np.n
     raise ValueError(f"unknown warm-up signal {signal!r}; choose one of {SIGNALS}")
 
 
-def welch_moving_average(matrix: np.ndarray, window: int) -> np.ndarray:
+def welch_moving_average(matrix: FloatArray, window: int) -> FloatArray:
     """Welch's procedure on a ``(replications, buckets)`` matrix.
 
     Average across replications, then a centred moving average of half-width
@@ -104,7 +107,7 @@ def welch_moving_average(matrix: np.ndarray, window: int) -> np.ndarray:
     return out
 
 
-def suggest_warmup(series: Sequence[float] | np.ndarray, bucket: float) -> float | None:
+def suggest_warmup(series: Sequence[float] | FloatArray, bucket: float) -> float | None:
     """MSER truncation point for a cross-replication mean series (White, 1997).
 
     Chooses the deletion ``d`` (within the first half) minimising
