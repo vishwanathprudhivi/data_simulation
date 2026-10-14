@@ -50,6 +50,9 @@ class Settings:
     reasoning: str = field(
         default_factory=lambda: _env("SIMCORE_REASONING", "heuristic") or "heuristic"
     )
+    frontend_dir: Path | None = field(
+        default_factory=lambda: Path(p) if (p := os.environ.get("SIMCORE_FRONTEND")) else None
+    )
     examples_dir: Path | None = field(
         default_factory=lambda: Path(p) if (p := os.environ.get("SIMCORE_EXAMPLES")) else None
     )

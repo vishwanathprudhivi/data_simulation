@@ -3,7 +3,7 @@ PYTHON ?= python3
 VENV   ?= .venv
 BIN    := $(VENV)/bin
 
-.PHONY: setup lint format test test-isaac test-redis coverage schemas api worker frontend e2e clean
+.PHONY: setup lint format test test-isaac test-redis coverage schemas api worker frontend frontend-build frontend-types-check e2e clean
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -42,11 +42,17 @@ api:
 worker:  # standalone worker (needs SIMCORE_BROKER=redis and SIMCORE_REDIS_URL)
 	$(BIN)/python -m services.workers --pool cpu
 
-frontend:
-	@echo "The frontend arrives in milestone M11 (BRD 12)." && exit 1
+frontend:  # dev server on :5173 proxying /api to `make api`
+	cd frontend && npm install --no-audit --no-fund && npm run gen:types && npm run dev
 
-e2e:
-	@echo "Playwright e2e tests arrive in milestone M11 (BRD 12)." && exit 1
+frontend-build:  # types from schemas/, typecheck, production bundle in frontend/dist
+	cd frontend && npm ci --no-audit --no-fund && npm run build
+
+frontend-types-check:  # generated TS types must match schemas/ (run after `make schemas`)
+	cd frontend && npm run gen:types && git diff --exit-code -- src/generated
+
+e2e: frontend-build  # Playwright AC-UI-01/02 against the API serving the built SPA
+	cd frontend && npx playwright test
 
 clean:
 	rm -rf runs .pytest_cache .mypy_cache .ruff_cache .import_linter_cache

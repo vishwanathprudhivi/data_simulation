@@ -789,6 +789,102 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
             raise HTTPException(404, f"chat session {session_id!r} not found")
         return json.loads(row["payload_json"])
 
+    # ------------------------------------------------------------------ replay (FR-UI-06, AC-UI-02)
+
+    def load_log(job: dict[str, Any], variant: str, rep: int) -> Any:
+        import tempfile
+
+        from simcore.core.obs.eventlog import EventLog
+
+        key = result_key(job, f"{variant}/rep_{rep:03d}/events.parquet")
+        try:
+            data = artifacts.get_bytes(key)
+        except KeyError as exc:
+            raise HTTPException(404, "event log not found") from exc
+        with tempfile.NamedTemporaryFile(suffix=".parquet") as fh:
+            fh.write(data)
+            fh.flush()
+            return EventLog.from_parquet(Path(fh.name))
+
+    def nav_for(job: dict[str, Any], variant: str) -> Any:
+        spec, bundle, _ = JobService.load(job)
+        from simcore.experiment.design import build_variants
+
+        for v in build_variants(spec, bundle):
+            if v.id == variant and v.bundle is not None:
+                bundle = v.bundle
+        if bundle.facility is None:
+            raise HTTPException(404, "this run has no facility")
+        return NavGraph(bundle.facility), bundle
+
+    @app.get(f"{API}/jobs/{{job_id}}/variants/{{variant}}/replications/{{rep}}/replay")
+    def replay_data(
+        job_id: str, variant: str, rep: int, who: Caller = Depends(caller)
+    ) -> dict[str, Any]:
+        """Facility + piecewise-linear trajectories rebuilt from the event log (FR-OBS-04)."""
+        from simcore.core.obs.replay import trajectories_from_log
+
+        job = own_job(job_id, who)
+        log = load_log(job, variant, rep)
+        nav, bundle = nav_for(job, variant)
+        store_ = trajectories_from_log(log, nav)
+        zones: dict[str, list[str]] = {}
+        for e in nav.edges.values():
+            if e.zone:
+                zones.setdefault(e.zone, []).extend([e.source, e.target])
+        return {
+            "duration": bundle.scenario.duration,
+            "nodes": {n: list(p) for n, p in nav.positions.items()},
+            "edges": [
+                {"id": e.id, "source": e.source, "target": e.target, "zone": e.zone}
+                for e in nav.edges.values()
+            ],
+            "zones": [{"id": z, "nodes": sorted(set(ns))} for z, ns in sorted(zones.items())],
+            "agents": {
+                a: {
+                    "spawn": list(sp) if (sp := store_.spawn[a]) is not None else None,
+                    "segments": [
+                        [sg.start_time, sg.end_time, sg.start[0], sg.start[1], sg.end[0],
+                         sg.end[1]]
+                        for sg in store_.segments[a]
+                    ],
+                }
+                for a in sorted(store_.spawn)
+            },
+        }  # fmt: skip
+
+    @app.get(f"{API}/jobs/{{job_id}}/variants/{{variant}}/replications/{{rep}}/snapshot")
+    def replay_snapshot(
+        job_id: str, variant: str, rep: int, t: float, who: Caller = Depends(caller)
+    ) -> dict[str, Any]:
+        """Agent positions and states at sim-time ``t`` computed server-side from the log."""
+        from simcore.core.obs.replay import snapshot
+
+        job = own_job(job_id, who)
+        nav, _ = nav_for(job, variant)
+        snap = snapshot(load_log(job, variant, rep), nav, t)
+        return {
+            "t": t,
+            "agents": {
+                a: {**v, "position": list(v["position"]) if v["position"] is not None else None}
+                for a, v in snap.items()
+            },
+        }
+
+    @app.post(f"{API}/scenarios/export")
+    def export_scenario(ref: ScenarioRef, who: Caller = Depends(caller)) -> Response:
+        """Scenario YAML with levers/overrides applied (FR-UI-09)."""
+        import yaml
+
+        bundle, _ = resolve(ref, who)
+        doc = bundle.scenario.model_dump(mode="json", by_alias=True, exclude_none=True)
+        body = yaml.safe_dump(doc, sort_keys=False)
+        return Response(
+            body,
+            media_type="application/x-yaml",
+            headers={"Content-Disposition": f'attachment; filename="{bundle.scenario.id}.yaml"'},
+        )
+
     # ------------------------------------------------------------------ semantic layer (M8)
 
     engines: dict[str, Any] = {}
@@ -969,6 +1065,11 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
     @app.get(f"{API}/audit")
     def audit(limit: int = Query(200, le=2000), who: Caller = Depends(caller)) -> list[Any]:
         return store.audit_log(who.workspace, limit)
+
+    if settings.frontend_dir is not None and (settings.frontend_dir / "index.html").exists():
+        from fastapi.staticfiles import StaticFiles
+
+        app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="spa")
 
     return app
 

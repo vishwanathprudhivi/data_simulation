@@ -23,6 +23,7 @@ onboarding kit.
 | M8 Semantic layer & charts (DuckDB, Vega-Lite) | done |
 | M9 Scenario compiler, Findings & narrative | done |
 | M10 Conversational analyst (tools, grounding, golden set) | done |
+| M11 Web frontend (React + TS, Playwright e2e) | done |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -59,6 +60,7 @@ Service (API at http://127.0.0.1:8000/api/v1/docs):
 
 ```bash
 make api                         # in-process workers, examples seeded into the library
+make frontend                    # web UI on http://127.0.0.1:5173 (proxies the API)
 docker compose up                # API + Redis + CPU worker
 ```
 
@@ -109,12 +111,13 @@ imports them.
 ## Layout
 
 ```
-src/simcore/   core/ specs/ experiment/ adapters/{logical,omniverse}/ cli/ api/
+src/simcore/   core/ specs/ experiment/ adapters/{logical,omniverse}/ cli/ api/ compiler.py
 domains/       toy_queue/ warehouse/ process_network/ packaging_line/
+services/      api/ platform/ workers/ semantic/ chat/
+frontend/      React + TS SPA (src/generated = types from schemas/)
 schemas/       generated JSON Schemas (make schemas)
-examples/      facilities/ scenarios/ experiments/
-tests/         unit/ validation/ integration/
-services/ frontend/   (later milestones)
+examples/      facilities/ scenarios/ experiments/ edits/ data/
+tests/         unit/ validation/ integration/ services/ golden/
 ```
 
 ## License

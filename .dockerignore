@@ -1,0 +1,9 @@
+.venv
+.git
+**/__pycache__
+.simcore
+.e2e-data
+runs
+frontend/node_modules
+frontend/dist
+frontend/test-results

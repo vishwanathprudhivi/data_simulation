@@ -1,5 +1,24 @@
 # Changelog
 
+## M11 – Frontend (2026-10-14)
+
+**Exit gate:** AC-UI-01 (Playwright: create a scenario via chat, tweak a field in the
+form, run, pin a chart, export a report) and AC-UI-02 (the 2D replay scrubber matches
+logged agent positions at sampled timestamps) — passing (`make e2e`).
+
+Implemented: React + TS SPA (FR-UI-01 layout; FR-UI-02 chat panel with draft, run,
+chart and findings cards; FR-UI-03 catalog-generated scenario form + raw JSON + diff,
+shared draft with chat; FR-UI-04 chart builder, pinned/annotated charts saved as
+analyses; FR-UI-05 run monitor with SSE progress, queue position, ETA, cancel;
+FR-UI-06 2D facility viewer with graph/zone/heatmap layers and replay scrubber;
+FR-UI-08 comparison with deltas, CIs and badges; FR-UI-09 HTML/MD report, chart
+PNG/SVG/CSV, scenario YAML exports; FR-UI-10 domain explorer; FR-UI-11 catalog-driven
+names and formats; FR-UI-12 trust indicators). TS types generated from the JSON
+Schemas (FR-API-08). API: replay/snapshot, scenario export, SPA serving. CI job for
+the frontend; Docker image builds the SPA.
+
+Decisions: ADR-015.
+
 ## M10 – Conversational analyst (2026-10-14)
 
 **Exit gate:** AC-CHAT-01 (golden set of 65 requests: 100% produce the expected spec

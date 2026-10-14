@@ -178,7 +178,12 @@ class ChatSession:
                 else:
                     out, is_error = self._run_tool(c["name"], c.get("input") or {})
                 turn.tool_calls.append(
-                    {"name": c["name"], "input": dict(c.get("input") or {}), "is_error": is_error}
+                    {
+                        "name": c["name"],
+                        "input": dict(c.get("input") or {}),
+                        "is_error": is_error,
+                        "output": out,  # for UI cards (draft, run, chart, findings)
+                    }
                 )
                 results.append(
                     {
