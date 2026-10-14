@@ -145,6 +145,28 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class QueryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    job_id: str
+    query: dict[str, Any]
+
+
+class ChartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    job_id: str | None = None
+    domain: str | None = None
+    chart: dict[str, Any]
+    user_requested_no_uncertainty: bool = False
+    format: str = Field(default="json", pattern="^(json|csv|svg|png|vega)$")
+
+
+class SqlRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    job_id: str
+    sql: str
+    max_rows: int = Field(default=1000, ge=1, le=20000)
+
+
 class AnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str | None = None
@@ -569,6 +591,161 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
         for r in page:
             r["data"] = json.loads(r["data"])
         return {"total": len(rows), "offset": offset, "rows": page}
+
+    # ------------------------------------------------------------------ semantic layer (M8)
+
+    engines: dict[str, Any] = {}
+
+    def engine_for(job: dict[str, Any]) -> Any:
+        from services.semantic.query import SemanticEngine
+        from services.semantic.sources import ExperimentData
+
+        prefix = result_key(job, "").rstrip("/")
+        if prefix not in engines:
+            root = artifacts.local_dir(prefix)
+            if root is None:  # pragma: no cover - remote store: materialise locally
+                import tempfile
+
+                root = Path(tempfile.mkdtemp(prefix="simcore-sem-"))
+                for key in artifacts.keys(prefix):
+                    dest = root / key[len(prefix) + 1 :]
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_bytes(artifacts.get_bytes(key))
+            _, bundle, _ = JobService.load(job)
+            engines[prefix] = (
+                SemanticEngine(
+                    ExperimentData(root), plugins.get(bundle.scenario.domain), {"job_id": job["id"]}
+                ),
+                bundle,
+            )
+            while len(engines) > 32:
+                engines.pop(next(iter(engines)))
+        return engines[prefix]
+
+    def query_error(exc: Exception) -> HTTPException:
+        issues = [i.to_dict() for i in getattr(exc, "issues", [])]
+        return HTTPException(
+            422,
+            {"error": "invalid_query", "repairable": True, "issues": issues, "message": str(exc)},
+        )
+
+    @app.post(f"{API}/query")
+    def run_query(body: QueryRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        from services.semantic.query import QueryError
+
+        engine, _ = engine_for(own_job(body.job_id, who))
+        try:
+            result: dict[str, Any] = engine.query(body.query).to_dict()
+        except (QueryError, ValueError) as exc:
+            raise query_error(exc) from exc
+        return result
+
+    @app.get(f"{API}/charts/templates")
+    def chart_templates() -> dict[str, str]:
+        from services.semantic.charts import TEMPLATE_RULES
+
+        return TEMPLATE_RULES
+
+    def chart_context(body: ChartRequest, who: Caller) -> tuple[Any, Any, dict[str, Any]]:
+        from services.semantic.charts import ChartValidationError, validate_chart
+
+        if body.job_id is not None:
+            engine, bundle = engine_for(own_job(body.job_id, who))
+            catalog = engine.catalog
+        elif body.domain is not None:
+            engine, bundle = None, None
+            catalog = {m.id: m for m in metric_catalog(plugins.get(body.domain)).metrics}
+        else:
+            raise HTTPException(422, "give job_id or domain")
+        try:
+            chart = validate_chart(
+                body.chart,
+                catalog,
+                user_requested_no_uncertainty=body.user_requested_no_uncertainty,
+            )
+        except ChartValidationError as exc:
+            raise HTTPException(422, exc.to_dict()) from exc
+        return chart, engine, {"bundle": bundle}
+
+    @app.post(f"{API}/charts/validate")
+    def chart_validate(body: ChartRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        chart, _, _ = chart_context(body, who)
+        return {"valid": True, "chart": chart.model_dump(mode="json")}
+
+    def render(body: ChartRequest, who: Caller) -> tuple[dict[str, Any], Any]:
+        from services.semantic.charts import render_chart
+        from services.semantic.query import QueryError
+
+        chart, engine, ctx = chart_context(body, who)
+        if engine is None:
+            raise HTTPException(422, "rendering needs job_id (the data source)")
+        try:
+            result = engine.query(chart.query)
+        except (QueryError, ValueError) as exc:
+            raise query_error(exc) from exc
+        facility = None
+        if chart.template == "floorplan_overlay":
+            bundle = ctx["bundle"]
+            if bundle is None or bundle.facility is None:
+                raise HTTPException(422, "this run has no facility for a floor plan")
+            nav = NavGraph(bundle.facility)
+            facility = {
+                "manifest": bundle.facility.model_dump(mode="json", by_alias=True),
+                "nodes": {n: list(p) for n, p in nav.positions.items()},
+                "edges": [
+                    {"id": e.id, "source": e.source, "target": e.target} for e in nav.edges.values()
+                ],
+            }
+        return render_chart(chart, result, facility), result
+
+    @app.post(f"{API}/charts/render")
+    def chart_render(body: ChartRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Vega-Lite + 'show your work': query spec, data table and provenance (FR-VIZ-04)."""
+        vega, result = render(body, who)
+        return {"ref_id": result.ref_id, "vega_lite": vega, "query": result.to_dict()}
+
+    @app.post(f"{API}/charts/export")
+    def chart_export(body: ChartRequest, who: Caller = Depends(caller)) -> Response:
+        vega, result = render(body, who)
+        fmt = body.format
+        if fmt == "csv":
+            return Response(result.to_csv(), media_type="text/csv")
+        if fmt in ("json", "vega"):
+            payload = (
+                vega
+                if fmt == "vega"
+                else {"chart": body.chart, "ref_id": result.ref_id, "provenance": result.provenance}
+            )
+            return Response(json.dumps(payload, default=str), media_type="application/json")
+        import vl_convert as vlc
+
+        if fmt == "svg":
+            return Response(vlc.vegalite_to_svg(vega), media_type="image/svg+xml")
+        return Response(vlc.vegalite_to_png(vega), media_type="image/png")
+
+    @app.post(f"{API}/sql")
+    def sql(body: SqlRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        from services.semantic.sources import ExperimentData
+        from services.semantic.sql import SqlRejected, run_readonly_sql
+
+        if not settings.sql_enabled:
+            raise HTTPException(403, "advanced SQL mode is disabled (SIMCORE_SQL_ENABLED)")
+        job = own_job(body.job_id, who)
+        root = artifacts.local_dir(result_key(job, "").rstrip("/"))
+        if root is None:  # pragma: no cover
+            raise HTTPException(501, "SQL mode needs a local artifact store")
+        try:  # a private, locked-down database per request
+            out = run_readonly_sql(ExperimentData(root), body.sql, body.max_rows)
+        except SqlRejected as exc:
+            raise HTTPException(422, str(exc)) from exc
+        store.audit(
+            "sql",
+            user=who.user,
+            workspace=who.workspace,
+            target=job["id"],
+            detail={"sql": body.sql[:500]},
+        )
+        return out
 
     # ------------------------------------------------------------------ analyses & audit
 

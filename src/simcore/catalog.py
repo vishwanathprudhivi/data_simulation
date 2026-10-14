@@ -179,6 +179,125 @@ CORE_METRICS: list[MetricDef] = [
     ),
 ]
 
+_EVENT_DIMS = ["variant", "replication", "time_bucket", "agent", "agent_type", "location"]
+
+
+def _e(
+    id_: str,
+    name: str,
+    unit: str,
+    formula: str,
+    desc: str,
+    dims: list[str],
+    direction: str = "neutral",
+    kind: str = "number",
+    grain: str = "time_bucket",
+) -> MetricDef:
+    return MetricDef(
+        id=id_,
+        display_name=name,
+        description=desc,
+        unit=unit,
+        source="event_log",
+        formula=formula,
+        grain=grain,
+        allowed_dimensions=dims,
+        direction=direction,
+        aggregation="sum",
+        statistical_treatment="replication_mean_ci",
+        format=NumberFormat(kind=kind, decimals=1),
+    )
+
+
+#: Event-level metrics. Formula grammar (governed, see services.semantic.metrics):
+#: ``count(<event type>)``, ``sum|mean|max(<event type>.<data field>)`` and the
+#: computed fields ``@dwell`` (time on an edge) and ``state_duration`` / ``state_intervals``.
+CORE_METRICS += [
+    _e(
+        "completions",
+        "Completions",
+        "1",
+        "count(task.completed)",
+        "Completed tasks",
+        _EVENT_DIMS,
+        "higher_is_better",
+        "integer",
+    ),
+    _e(
+        "releases",
+        "Releases",
+        "1",
+        "count(task.released)",
+        "Released tasks",
+        ["variant", "replication", "time_bucket", "location"],
+    ),
+    _e(
+        "blocking_time",
+        "Blocking time",
+        "s",
+        "sum(interaction.blocking.duration)",
+        "Time agents spent blocked",
+        _EVENT_DIMS,
+        "lower_is_better",
+        "duration",
+    ),
+    _e(
+        "colocation_events",
+        "Co-location events",
+        "1",
+        "count(interaction.colocation)",
+        "Service starts with another agent in the same group",
+        _EVENT_DIMS,
+        "lower_is_better",
+        "integer",
+    ),
+    _e(
+        "edge_traversals",
+        "Edge traversals",
+        "1",
+        "count(agent.move)",
+        "Agents passing over an edge (location = edge id)",
+        _EVENT_DIMS,
+    ),
+    _e(
+        "edge_occupancy_time",
+        "Edge occupancy",
+        "s",
+        "sum(agent.move.@dwell)",
+        "Agent-seconds spent on each edge (location = edge id)",
+        _EVENT_DIMS,
+        kind="duration",
+    ),
+    _e(
+        "service_time",
+        "Service time",
+        "s",
+        "sum(service.start.duration)",
+        "Work time started at each location",
+        _EVENT_DIMS,
+        kind="duration",
+    ),
+    _e(
+        "state_time",
+        "Time in state",
+        "s",
+        "state_duration",
+        "Agent time by state (stacked breakdowns)",
+        ["variant", "replication", "agent", "agent_type", "state"],
+        kind="duration",
+        grain="agent",
+    ),
+    _e(
+        "state_intervals",
+        "Agent state timeline",
+        "s",
+        "state_intervals",
+        "Raw agent state intervals (Gantt); one replication",
+        ["agent", "state", "time"],
+        grain="agent",
+    ),
+]
+
 CORE_DIMENSIONS: list[DimensionDef] = [  # ids must match specs.domain.CORE_DIMENSION_IDS
     DimensionDef(
         id="variant", display_name="Variant", kind="factor", description="Experiment alternative"
@@ -195,6 +314,13 @@ CORE_DIMENSIONS: list[DimensionDef] = [  # ids must match specs.domain.CORE_DIME
     DimensionDef(id="task_type", display_name="Task type", kind="categorical"),
     DimensionDef(id="location", display_name="Location", kind="categorical"),
     DimensionDef(id="zone", display_name="Zone", kind="categorical"),
+    DimensionDef(id="state", display_name="Agent state", kind="categorical"),
+    DimensionDef(
+        id="time",
+        display_name="Sim-time",
+        kind="time_bucket",
+        description="Raw event time (state intervals only)",
+    ),
 ]
 
 

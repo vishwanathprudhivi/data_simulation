@@ -1,5 +1,25 @@
 # Changelog
 
+## M8 – Semantic layer & visualization (2026-10-14)
+
+**Exit gate:** AC-SEM-01 (a metric added to `domain.yaml` appears in the metric
+catalog API and is accepted and rendered by the chart endpoints with no code change;
+the chat `describe_domain` and UI chart-builder parts close in M10/M11) and AC-VIZ-01
+(a ChartSpec with an unknown metric is rejected with a repair-ready error: path,
+"did you mean ...", allowed values; the assistant-recovery part closes in M10) —
+passing.
+
+Implemented: FR-SEM-01/02 core event metrics and `state`/`time` dimensions;
+FR-SEM-03 governed `QuerySpec` engine on DuckDB plus opt-in read-only SQL sandbox;
+FR-SEM-04 provenance and stable `ref_id`s; FR-SEM-05 replication CIs and paired /
+independent comparisons; FR-VIZ-01 data-free ChartSpecs; FR-VIZ-02 all 15
+templates; FR-VIZ-03 floor-plan overlays with time scrubbing; FR-VIZ-04 show-your-work
+payloads and CSV/JSON/Vega-Lite/SVG/PNG export; FR-VIZ-05 repair-ready validation;
+FR-VIZ-06 uncertainty guardrail. API: `/query`, `/charts/{templates,validate,render,
+export}`, `/sql`.
+
+Decisions: ADR-012.
+
 ## M7 – Service layer (2026-10-14)
 
 **Exit gate:** AC-API-01 — an experiment submitted via the API streams progress over

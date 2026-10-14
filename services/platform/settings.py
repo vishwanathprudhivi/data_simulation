@@ -46,6 +46,7 @@ class Settings:
     rate_limit_per_minute: int = field(
         default_factory=lambda: int(os.environ.get("SIMCORE_RATE_LIMIT", "600"))
     )
+    sql_enabled: bool = field(default_factory=lambda: _bool("SIMCORE_SQL_ENABLED", False))
     examples_dir: Path | None = field(
         default_factory=lambda: Path(p) if (p := os.environ.get("SIMCORE_EXAMPLES")) else None
     )

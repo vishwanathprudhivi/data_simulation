@@ -20,6 +20,7 @@ onboarding kit.
 | M5 Dispatch & policies (Redis, plans, solver) | done |
 | M6 Domain definitions, catalogs, Tier-0 process network | done |
 | M7 Service layer (FastAPI, jobs, SSE, cache) | done |
+| M8 Semantic layer & charts (DuckDB, Vega-Lite) | done |
 | M4 – M14 | in progress |
 
 ## Quick start

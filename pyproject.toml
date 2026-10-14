@@ -20,7 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 redis = ["redis>=5"]
-service = ["fastapi>=0.110", "uvicorn>=0.29", "httpx>=0.27", "duckdb>=1.0"]
+service = ["fastapi>=0.110", "uvicorn>=0.29", "httpx>=0.27", "duckdb>=1.0", "vl-convert-python>=1.3"]
 s3 = ["boto3>=1.34"]
 dev = [
     "pytest>=8",

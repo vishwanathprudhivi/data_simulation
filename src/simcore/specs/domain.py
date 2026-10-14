@@ -40,6 +40,8 @@ CORE_DIMENSION_IDS: tuple[str, ...] = (
     "task_type",
     "location",
     "zone",
+    "state",
+    "time",
 )
 
 
