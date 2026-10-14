@@ -1,0 +1,29 @@
+# Scripted demo (FR-SCN-06, AC-IFC-02): the warehouse baseline with narrated beats and
+# a disruption injected live. `simcore interactive examples/scenarios/warehouse/demo.yaml`
+id: wh_demo
+name: Warehouse demo - aisle blockage injected live
+extends: baseline.yaml
+duration: 2 h
+beats:
+  - name: intro
+    at: 0
+    narration: Twelve pallet-jack operators start the outbound wave on the reference DC.
+    speed: 120
+  - name: steady_state
+    at: 20 min
+    narration: Traffic has settled; watch blocked time in the narrow cross aisles.
+  - name: blockage
+    at: 40 min
+    narration: A pallet is dropped in aisle 2 - the aisle is closed for 25 minutes.
+    inject:
+      - {id: aisle_02_drop, type: location_blocked, target: "zone:aisle_02", duration: 25 min}
+  - name: shortage
+    at: 70 min
+    narration: Three operators are pulled to receiving for half an hour.
+    inject:
+      - {id: pulled_to_receiving, type: resource_unavailable,
+         target: "type:pallet_jack_operator", duration: 30 min, params: {count: 3}}
+  - name: wrap_up
+    at: 115 min
+    narration: Compare throughput and on-time rate with the undisturbed baseline.
+    pause: true

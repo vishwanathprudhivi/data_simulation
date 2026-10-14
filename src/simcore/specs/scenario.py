@@ -17,6 +17,7 @@ __all__ = [
     "DemandSpec",
     "DisruptionSpec",
     "FleetEntry",
+    "InjectSpec",
     "InteractionSpec",
     "ListDemand",
     "PolicyRef",
@@ -176,13 +177,30 @@ class InteractionSpec(SpecModel):
     deadlock: DeadlockSpec = Field(default_factory=DeadlockSpec)
 
 
+class InjectSpec(SpecModel):
+    """A disruption injected live by a demo beat or the operator (FR-IFC-05)."""
+
+    id: Identifier
+    type: str
+    duration: Duration | None = None
+    target: str | None = None
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
 class BeatSpec(SpecModel):
-    """Scripted demo beat (FR-SCN-06)."""
+    """Scripted demo beat (FR-SCN-06).
+
+    Beats only act in interactive sessions: they narrate, pause, change the playback
+    speed or inject disruptions live. Batch runs ignore them; an interactive session
+    can export the scenario with its injections as scheduled disruptions.
+    """
 
     name: str
     at: Duration
     narration: str = ""
     pause: bool = False
+    speed: float | None = Field(default=None, gt=0, description="Sim seconds per wall second.")
+    inject: list[InjectSpec] = Field(default_factory=list)
 
 
 class ScenarioSpec(SpecModel):

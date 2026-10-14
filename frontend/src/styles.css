@@ -55,3 +55,8 @@ tr.selected { background: #eef3ff; }
 .plan .z2 { fill: #f08c00; stroke: #f08c00; } .plan .z3 { fill: #9c36b5; stroke: #9c36b5; }
 .plan .z4 { fill: #1098ad; stroke: #1098ad; } .plan .z5 { fill: #e64980; stroke: #e64980; }
 .exports a { margin-right: 12px; }
+.hud { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.hud-item { display: flex; flex-direction: column; }
+.hud-item b { font-size: 18px; }
+.captions p { margin: 2px 0; }
+.inject input, .inject select { max-width: 220px; }

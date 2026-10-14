@@ -100,3 +100,27 @@ test("AC-UI-02 replay scrubber matches logged positions", async ({ page, request
   const moved = [...seen.values()].filter((s) => s.size > 2).length;
   expect(moved).toBeGreaterThan(3);
 });
+
+// AC-IFC-02 in the web UI: the reference facility plays a scripted scenario, a disruption
+// is injected live and the KPI HUD updates.
+test("AC-IFC-02 live demo with beats, live injection and KPI HUD", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("scenario-wh_demo").click();
+  await page.getByTestId("tab-live").click();
+  await page.getByTestId("live-start").click();
+  await page.getByTestId("live-play").click();
+  await expect(page.getByTestId("captions")).toContainText("intro");
+  await expect(page.getByTestId("kpi-hud").locator(".hud-item").first()).toBeVisible();
+  await expect(page.getByTestId("live-plan").locator("circle.agent")).toHaveCount(12);
+  await page.getByTestId("inject-type").selectOption("resource_unavailable");
+  await page.getByTestId("inject-target").fill("type:pallet_jack_operator");
+  await page.getByTestId("inject-count").fill("2");
+  await page.getByTestId("inject-go").click();
+  await expect(page.getByTestId("active-disruption").first()).toBeVisible();
+  const before = Number((await page.getByTestId("live-clock").textContent())?.match(/t = (\d+)/)?.[1]);
+  await page.getByTestId("live-step").click();
+  await expect
+    .poll(async () => Number((await page.getByTestId("live-clock").textContent())?.match(/t = (\d+)/)?.[1]))
+    .toBeGreaterThan(before);
+  await expect(page.getByTestId("kpi-hud")).toContainText("Pallets per labor hour");
+});

@@ -2,7 +2,7 @@
   "$defs": {
     "BeatSpec": {
       "additionalProperties": false,
-      "description": "Scripted demo beat (FR-SCN-06).",
+      "description": "Scripted demo beat (FR-SCN-06).\n\nBeats only act in interactive sessions: they narrate, pause, change the playback\nspeed or inject disruptions live. Batch runs ignore them; an interactive session\ncan export the scenario with its injections as scheduled disruptions.",
       "properties": {
         "at": {
           "anyOf": [
@@ -17,6 +17,13 @@
           "description": "time quantity: SI number or string with unit, e.g. '30 min'",
           "title": "At"
         },
+        "inject": {
+          "items": {
+            "$ref": "#/$defs/InjectSpec"
+          },
+          "title": "Inject",
+          "type": "array"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -30,6 +37,20 @@
           "default": false,
           "title": "Pause",
           "type": "boolean"
+        },
+        "speed": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sim seconds per wall second.",
+          "title": "Speed"
         }
       },
       "required": [
@@ -375,6 +396,67 @@
         "scale"
       ],
       "title": "GammaDist",
+      "type": "object"
+    },
+    "InjectSpec": {
+      "additionalProperties": false,
+      "description": "A disruption injected live by a demo beat or the operator (FR-IFC-05).",
+      "properties": {
+        "duration": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "InjectSpec",
       "type": "object"
     },
     "InteractionSpec": {

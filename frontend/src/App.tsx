@@ -2,6 +2,7 @@ import { ChatPanel } from "./components/ChatPanel";
 import { Comparison } from "./components/Comparison";
 import { DomainExplorer } from "./components/DomainExplorer";
 import { FacilityViewer } from "./components/FacilityViewer";
+import { LiveView } from "./components/LiveView";
 import { ResultsCanvas } from "./components/ResultsCanvas";
 import { RunMonitor } from "./components/RunMonitor";
 import { ScenarioEditor } from "./components/ScenarioEditor";
@@ -14,6 +15,7 @@ const VIEWS: [View, string][] = [
   ["compare", "Comparison"],
   ["canvas", "Canvas"],
   ["facility", "Facility"],
+  ["live", "Live"],
   ["explorer", "Domain"],
 ];
 
@@ -60,6 +62,7 @@ export function App() {
           {s.view === "compare" && <Comparison />}
           {s.view === "canvas" && <ResultsCanvas />}
           {s.view === "facility" && <FacilityViewer />}
+          {s.view === "live" && <LiveView />}
           {s.view === "explorer" && <DomainExplorer />}
         </section>
       </main>

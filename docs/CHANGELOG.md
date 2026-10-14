@@ -1,5 +1,20 @@
 # Changelog
 
+## M13 – Interactive / demo mode (2026-10-14)
+
+**Exit gate:** AC-IFC-02 (interactive mode loads the reference facility, plays a
+scripted scenario with live-injected disruptions and displays a KPI HUD) — passing
+in the library, the CLI, the API and the web UI (Playwright). 3D streaming into the
+web viewer is not implemented (needs Isaac Sim on a GPU host).
+
+Implemented: `InteractiveSession` (play/pause/step/speed, live injection, HUD,
+positions, captions, recorded scenario reproducing the session in batch), scenario
+beats with `speed` and `inject`, `simcore interactive`, `/interactive/sessions`
+endpoints with SSE, the UI Live tab, and the warehouse demo scenario
+(`examples/scenarios/warehouse/demo.yaml`).
+
+Decisions: ADR-017.
+
 ## M12 – Domain onboarding kit (2026-10-14)
 
 **Exit gate:** AC-DOM-01 (the Tier-0 packaging line goes from `domain.yaml` + sample

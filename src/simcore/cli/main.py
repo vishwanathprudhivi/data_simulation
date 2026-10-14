@@ -398,6 +398,97 @@ def replay(events: Path, times: tuple[float, ...], scenario: Path | None) -> Non
             click.echo(f"t={at}: " + json.dumps(states, sort_keys=True))
 
 
+@cli.command()
+@click.argument("scenario", type=click.Path(exists=True, path_type=Path))
+@click.option("--seed", type=int, default=None)
+@click.option("--speed", type=float, default=600.0, help="Sim seconds per wall second.")
+@click.option("--realtime", is_flag=True, help="Pace playback with the wall clock.")
+@click.option("--hud-every", type=float, default=1800.0, help="Print the HUD every N sim-s.")
+@click.option(
+    "--inject",
+    "injects",
+    multiple=True,
+    help="Live injection 'at=SECONDS,id=ID,type=TYPE[,target=T][,duration=S][,count=N]'.",
+)
+@click.option("--mode", default="logical", help="kinematic opens the Isaac Sim stage (GPU).")
+@click.option(
+    "--record",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write the session as a reproducible scenario YAML.",
+)
+@click.option("--plugin", "plugins", multiple=True)
+def interactive(
+    scenario: Path, seed: int | None, speed: float, realtime: bool, hud_every: float,
+    injects: tuple[str, ...], mode: str, record: Path | None, plugins: tuple[str, ...],
+) -> None:  # fmt: skip
+    """Play a scenario with its beats, live injections and a KPI HUD (FR-IFC-05)."""
+    import time as wall
+
+    import yaml
+
+    from simcore.interactive import InteractiveSession
+
+    try:
+        bundle = load_scenario(scenario)
+        sess = InteractiveSession(bundle, _plugins(plugins), seed=seed, speed=speed, mode=mode)
+    except Exception as exc:
+        _fail(exc)
+    pending = []
+    for raw in injects:
+        kv = dict(part.split("=", 1) for part in raw.split(",") if "=" in part)
+        at = float(kv.pop("at", "0"))
+        count = kv.pop("count", None)
+        spec: dict[str, Any] = {k: v for k, v in kv.items()}
+        if "duration" in spec:
+            spec["duration"] = float(spec["duration"])
+        if count is not None:
+            spec["params"] = {"count": int(count)}
+        pending.append((at, spec))
+    pending.sort(key=lambda x: x[0])
+    shown = 0
+    next_hud = 0.0
+
+    def hud() -> None:
+        values = "  ".join(f"{k}={v:.4g}" for k, v in sess.hud().items())
+        click.echo(f"[t={sess.now:8.0f}s] HUD {values}")
+
+    sess.play()
+    last_hud = -1.0
+    while not sess.finished:
+        cands = [sess.duration, *(at for at, _ in pending if at > sess.now)]
+        if next_hud > sess.now:
+            cands.append(next_hud)
+        target = min(cands)
+        if realtime:
+            wall.sleep(max(0.0, (target - sess.now) / sess.speed))
+        sess.advance(target - sess.now)
+        for c in sess.captions[shown:]:
+            click.echo(f"[t={c.t:8.0f}s] {c.beat}: {c.text}")
+            for i in sess.injections:
+                if i.t == c.t and i.source == f"beat:{c.beat}":
+                    click.echo(f"[t={c.t:8.0f}s] INJECT {i.spec.id} ({i.spec.type})")
+        shown = len(sess.captions)
+        while pending and pending[0][0] <= sess.now:
+            _, spec = pending.pop(0)
+            sess.inject(spec)
+            click.echo(f"[t={sess.now:8.0f}s] INJECT {spec['id']} ({spec.get('type')})")
+        if sess.now >= next_hud:
+            hud()
+            last_hud, next_hud = sess.now, sess.now + hud_every
+        if not sess.playing and not sess.finished:  # a beat paused the demo
+            click.echo(f"[t={sess.now:8.0f}s] paused by beat; continuing")
+            sess.play()
+    if last_hud != sess.now:
+        hud()
+    if record is not None:
+        doc = sess.recorded_scenario().scenario.model_dump(mode="json", by_alias=True,
+                                                           exclude_none=True)  # fmt: skip
+        record.write_text(yaml.safe_dump(doc, sort_keys=False))
+        click.echo(f"recorded session -> {record}")
+    sess.close()
+
+
 @cli.group()
 def schemas() -> None:
     """JSON Schemas for the spec contracts."""

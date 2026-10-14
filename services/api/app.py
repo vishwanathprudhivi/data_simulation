@@ -175,6 +175,21 @@ class GapRequest(BaseModel):
     detail: str = Field(default="", max_length=4000)
 
 
+class LiveStartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scenario: ScenarioRef
+    seed: int | None = None
+    speed: float = Field(default=60.0, gt=0, le=100_000)
+
+
+class LiveControlRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: str = Field(pattern="^(play|pause|step|speed|inject)$")
+    seconds: float | None = Field(default=None, gt=0, le=10_000_000)
+    speed: float | None = Field(default=None, gt=0, le=100_000)
+    inject: dict[str, Any] | None = None
+
+
 class AttachmentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=1, max_length=200)
@@ -651,6 +666,118 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
         for r in page:
             r["data"] = json.loads(r["data"])
         return {"total": len(rows), "offset": offset, "rows": page}
+
+    # ------------------------------------------------------------------ interactive (M13)
+
+    import threading
+
+    live: dict[str, tuple[Any, threading.Lock, str]] = {}
+    MAX_LIVE = 8
+
+    def own_live(session_id: str, who: Caller) -> tuple[Any, threading.Lock]:
+        entry = live.get(session_id)
+        if entry is None or entry[2] != who.workspace:
+            raise HTTPException(404, f"interactive session {session_id!r} not found")
+        return entry[0], entry[1]
+
+    @app.post(f"{API}/interactive/sessions", status_code=201)
+    def live_start(body: LiveStartRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Start a live replication (FR-IFC-05); beats in the scenario drive the demo."""
+        from simcore.interactive import InteractiveSession
+
+        if sum(1 for e in live.values() if e[2] == who.workspace) >= MAX_LIVE:
+            raise HTTPException(429, f"at most {MAX_LIVE} interactive sessions per workspace")
+        bundle, _ = resolve(body.scenario, who)
+        sess = InteractiveSession(bundle, plugins, seed=body.seed, speed=body.speed)
+        sid = f"live_{uuid.uuid4().hex[:12]}"
+        live[sid] = (sess, threading.Lock(), who.workspace)
+        out: dict[str, Any] = {"id": sid, "state": sess.state(), "facility": None}
+        if bundle.facility is not None:
+            nav = NavGraph(bundle.facility)
+            out["facility"] = {
+                "nodes": {n: list(p) for n, p in nav.positions.items()},
+                "edges": [{"id": e.id, "source": e.source, "target": e.target}
+                          for e in nav.edges.values()],
+            }  # fmt: skip
+        store.audit("live.start", user=who.user, workspace=who.workspace, target=sid)
+        return out
+
+    def live_view(sess: Any) -> dict[str, Any]:
+        return {**sess.state(), "positions": sess.positions()}
+
+    @app.post(f"{API}/interactive/sessions/{{session_id}}/control")
+    def live_control(
+        session_id: str, body: LiveControlRequest, who: Caller = Depends(caller)
+    ) -> dict[str, Any]:
+        sess, lock = own_live(session_id, who)
+        with lock:
+            try:
+                if body.action == "play":
+                    sess.play()
+                elif body.action == "pause":
+                    sess.pause()
+                elif body.action == "step":
+                    sess.step(body.seconds or 60.0)
+                elif body.action == "speed":
+                    sess.set_speed(body.speed or sess.speed)
+                elif body.action == "inject":
+                    if not body.inject:
+                        raise HTTPException(422, "inject needs an 'inject' object")
+                    sess.inject(body.inject)
+                    store.audit("live.inject", user=who.user, workspace=who.workspace,
+                                target=session_id, outcome=str(body.inject.get("id")))  # fmt: skip
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from exc
+            return live_view(sess)
+
+    @app.get(f"{API}/interactive/sessions/{{session_id}}")
+    def live_state(
+        session_id: str,
+        advance: float = Query(0.0, ge=0, le=10),
+        who: Caller = Depends(caller),
+    ) -> dict[str, Any]:
+        """Current state; ``advance`` wall-seconds of playback are applied first."""
+        sess, lock = own_live(session_id, who)
+        with lock:
+            sess.tick(advance)
+            return live_view(sess)
+
+    @app.get(f"{API}/interactive/sessions/{{session_id}}/stream")
+    async def live_stream(session_id: str, who: Caller = Depends(caller)) -> StreamingResponse:
+        """SSE while playing: the server plays forward and pushes HUD + positions."""
+        sess, lock = own_live(session_id, who)
+
+        async def gen() -> AsyncIterator[str]:
+            last = time.monotonic()
+            while session_id in live:
+                now = time.monotonic()
+                with lock:
+                    sess.tick(min(now - last, 1.0))
+                    view = live_view(sess)
+                last = now
+                yield f"event: state\ndata: {json.dumps(view, default=str)}\n\n"
+                if view["finished"] or not view["playing"]:
+                    yield "event: done\ndata: {}\n\n"  # finished, paused or stopped by a beat
+                    return
+                await asyncio.sleep(0.25)
+
+        return StreamingResponse(gen(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache"})  # fmt: skip
+
+    @app.get(f"{API}/interactive/sessions/{{session_id}}/recorded")
+    def live_recorded(session_id: str, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """The session as a reproducible scenario (injections become scheduled disruptions)."""
+        sess, lock = own_live(session_id, who)
+        with lock:
+            return {"bundle": bundle_to_json(sess.recorded_scenario())}
+
+    @app.delete(f"{API}/interactive/sessions/{{session_id}}")
+    def live_close(session_id: str, who: Caller = Depends(caller)) -> dict[str, Any]:
+        sess, lock = own_live(session_id, who)
+        with lock:
+            sess.close()
+            live.pop(session_id, None)
+        return {"closed": session_id}
 
     # ------------------------------------------------------------------ attachments (FR-SCG-10)
 

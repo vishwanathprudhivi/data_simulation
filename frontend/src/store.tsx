@@ -22,7 +22,7 @@ export interface PinnedChart {
   note: string;
 }
 
-export type View = "editor" | "runs" | "compare" | "canvas" | "facility" | "explorer";
+export type View = "editor" | "runs" | "compare" | "canvas" | "facility" | "live" | "explorer";
 
 interface Store {
   scenarios: ScenarioRow[];

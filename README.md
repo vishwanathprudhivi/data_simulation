@@ -25,6 +25,7 @@ onboarding kit.
 | M10 Conversational analyst (tools, grounding, golden set) | done |
 | M11 Web frontend (React + TS, Playwright e2e) | done |
 | M12 Domain onboarding kit (mapping, fitting, backtest, CLI) | done |
+| M13 Interactive/demo mode (beats, live injection, KPI HUD) | done; 3D streaming pending |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -47,6 +48,9 @@ make lint test                  # ruff, mypy, import-linter; tests (no GPU/Redis
 # config-only (Tier 0) domain: packaging line defined entirely in domains/packaging_line/domain.yaml
 .venv/bin/simcore domains show packaging_line
 .venv/bin/simcore run examples/scenarios/packaging_line/baseline.yaml
+
+# interactive demo: narrated beats, a disruption injected live, KPI HUD
+.venv/bin/simcore interactive examples/scenarios/warehouse/demo.yaml --hud-every 1800
 
 # experiments: baseline + variants x replications with CRN, CIs and a report
 .venv/bin/simcore experiment examples/experiments/mmc_servers.yaml --out runs --parallel 4

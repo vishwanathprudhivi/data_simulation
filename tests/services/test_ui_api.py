@@ -146,3 +146,40 @@ def test_FR_SCG_10_attachment_proposed_validated_and_applied(env: Any) -> None:
     assert c.post("/api/v1/attachments/att_nope/apply", json={
         "scenario": {"example": "scenarios/toy_queue/mmc_baseline.yaml"},
         "source": {"kind": "samples", "columns": {"value": "v"}}}).status_code == 404  # fmt: skip
+
+
+def test_AC_IFC_02_live_session_api(env: Any) -> None:
+    c, _ = env
+    r = c.post(
+        "/api/v1/interactive/sessions",
+        json={"scenario": {"example": "scenarios/warehouse/demo.yaml"}, "seed": 4, "speed": 600},
+    )
+    assert r.status_code == 201, r.text
+    sid, facility = r.json()["id"], r.json()["facility"]
+    assert facility["nodes"] and facility["edges"]
+    base = f"/api/v1/interactive/sessions/{sid}"
+    st = c.post(f"{base}/control", json={"action": "step", "seconds": 600}).json()
+    assert st["t"] == 600 and st["captions"][0]["beat"] == "intro" and st["positions"]
+    st = c.post(
+        f"{base}/control",
+        json={"action": "inject", "inject": {"id": "ops_out", "type": "resource_unavailable",
+              "target": "type:pallet_jack_operator", "duration": 900, "params": {"count": 2}}},
+    ).json()  # fmt: skip
+    assert st["injections"][0]["id"] == "ops_out" and st["injections"][0]["t"] == 600
+    c.post(f"{base}/control", json={"action": "play"})
+    st = c.get(base, params={"advance": 2}).json()  # 2 wall-s at speed 120 (intro beat)
+    assert st["t"] > 600 and "ops_out" in st["active_disruptions"] and st["hud"]
+    dup = c.post(
+        f"{base}/control",
+        json={"action": "inject", "inject": {"id": "ops_out", "type": "speed_change"}},
+    )
+    assert dup.status_code == 422
+    rec = c.get(f"{base}/recorded").json()["bundle"]["scenario"]
+    assert rec["disruptions"][0]["id"] == "ops_out"
+    assert c.get(base, headers={"X-Workspace": "other"}).status_code == 404
+    c.post(f"{base}/control", json={"action": "pause"})
+    with c.stream("GET", f"{base}/stream") as resp:
+        first = next(line for line in resp.iter_lines() if line.startswith("data: "))
+    assert '"hud"' in first
+    assert c.delete(base).json() == {"closed": sid}
+    assert c.get(base).status_code == 404

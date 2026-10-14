@@ -4,9 +4,18 @@
  * time quantity: SI number or string with unit, e.g. '30 min'
  */
 export type At = number | string;
+export type Duration = (number | string) | null;
+export type Id = string;
+export type Target = string | null;
+export type Type = string;
+export type Inject = InjectSpec[];
 export type Name = string;
 export type Narration = string;
 export type Pause = boolean;
+/**
+ * Sim seconds per wall second.
+ */
+export type Speed = number | null;
 export type Beats = BeatSpec[];
 /**
  * Path to behaviors.yaml.
@@ -152,7 +161,7 @@ export type Kind11 = "list";
 export type Stream2 = string;
 export type Destination = string | null;
 export type DueTime = (number | string) | null;
-export type Id = string;
+export type Id1 = string;
 export type Origin = string | null;
 export type Priority1 = number;
 export type Quantity1 = number;
@@ -160,7 +169,7 @@ export type Quantity1 = number;
  * time quantity: SI number or string with unit, e.g. '30 min'
  */
 export type ReleaseTime = number | string;
-export type Type = string;
+export type Type1 = string;
 export type Tasks = TaskSpec[];
 export type Demand = (StochasticDemand | ReplayDemand | ListDemand)[];
 export type Description = string;
@@ -171,26 +180,26 @@ export type At1 = (number | string) | null;
 /**
  * None = until end of run.
  */
-export type Duration = (number | string) | null;
-export type Id1 = string;
+export type Duration1 = (number | string) | null;
+export type Id2 = string;
 /**
  * Entity id, 'type:<entity type>' or 'tag:<tag>' selecting affected entities.
  */
-export type Target = string | null;
+export type Target1 = string | null;
 export type Op = ">" | ">=" | "<" | "<=" | "==";
 export type Signal = "queue_length" | "completed_tasks" | "released_tasks";
 export type Threshold = number;
 /**
  * Core type (see CORE_DISRUPTION_TYPES) or a domain type.
  */
-export type Type1 = string;
+export type Type2 = string;
 export type Disruptions = DisruptionSpec[];
 export type Domain = string;
 export type DomainVersion = string | null;
 /**
  * Run length (seconds or '8 h').
  */
-export type Duration1 = number | string;
+export type Duration2 = number | string;
 /**
  * Parent scenario (path), resolved at load.
  */
@@ -202,7 +211,7 @@ export type Facility = string | null;
 export type AgentType = string;
 export type Count = number;
 export type Fleet = FleetEntry[];
-export type Id2 = string;
+export type Id3 = string;
 /**
  * Lateral gap needed between agents (m).
  */
@@ -259,14 +268,14 @@ export interface Scenario {
   disruptions?: Disruptions;
   domain: Domain;
   domain_version?: DomainVersion;
-  duration: Duration1;
+  duration: Duration2;
   extends?: Extends;
   facility?: Facility;
   fleet?: Fleet;
-  id: Id2;
+  id: Id3;
   interaction?: InteractionSpec;
   name?: Name1;
-  params?: Params1;
+  params?: Params2;
   policy?: PolicyRef;
   schema_version?: SchemaVersion;
   seed?: Seed;
@@ -275,12 +284,31 @@ export interface Scenario {
 }
 /**
  * Scripted demo beat (FR-SCN-06).
+ *
+ * Beats only act in interactive sessions: they narrate, pause, change the playback
+ * speed or inject disruptions live. Batch runs ignore them; an interactive session
+ * can export the scenario with its injections as scheduled disruptions.
  */
 export interface BeatSpec {
   at: At;
+  inject?: Inject;
   name: Name;
   narration?: Narration;
   pause?: Pause;
+  speed?: Speed;
+}
+/**
+ * A disruption injected live by a demo beat or the operator (FR-IFC-05).
+ */
+export interface InjectSpec {
+  duration?: Duration;
+  id: Id;
+  params?: Params;
+  target?: Target;
+  type: Type;
+}
+export interface Params {
+  [k: string]: unknown;
 }
 export interface StochasticDemand {
   attributes?: Attributes;
@@ -391,26 +419,26 @@ export interface TaskSpec {
   attributes?: Attributes1;
   destination?: Destination;
   due_time?: DueTime;
-  id: Id;
+  id: Id1;
   origin?: Origin;
   priority?: Priority1;
   quantity?: Quantity1;
   release_time?: ReleaseTime;
-  type?: Type;
+  type?: Type1;
 }
 export interface Attributes1 {
   [k: string]: unknown;
 }
 export interface DisruptionSpec {
   at?: At1;
-  duration?: Duration;
-  id: Id1;
-  params?: Params;
-  target?: Target;
+  duration?: Duration1;
+  id: Id2;
+  params?: Params1;
+  target?: Target1;
   trigger?: TriggerSpec | null;
-  type: Type1;
+  type: Type2;
 }
-export interface Params {
+export interface Params1 {
   [k: string]: unknown;
 }
 /**
@@ -461,14 +489,14 @@ export interface DeadlockSpec {
 /**
  * Domain parameters (validated by the domain plug-in).
  */
-export interface Params1 {
+export interface Params2 {
   [k: string]: unknown;
 }
 export interface PolicyRef {
   assignment?: Assignment;
   name?: Name2;
-  params?: Params2;
+  params?: Params3;
 }
-export interface Params2 {
+export interface Params3 {
   [k: string]: unknown;
 }
