@@ -8,12 +8,18 @@ registers is scoped to that plug-in, so unrelated domains coexist in one process
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import inspect
+import logging
+import os
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib.metadata import entry_points
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
+import yaml
 from pydantic import BaseModel
 
 from simcore.core.config import ConfigError, ConfigIssue, ScenarioBundle, validate_spec
@@ -34,7 +40,11 @@ __all__ = [
     "facility_issues",
 ]
 
+log = logging.getLogger(__name__)
+
 ENTRY_POINT_GROUP = "simcore.domains"
+TIER0_GROUP = "simcore.tier0"
+DOMAIN_PATH_ENV = "SIMCORE_DOMAIN_PATH"
 
 
 class PluginError(RuntimeError):
@@ -98,8 +108,23 @@ class DomainPlugin(ABC):
         return {}
 
     def domain_definition(self) -> DomainDefinition | None:
-        """Published ``domain.yaml`` (metrics, dimensions, levers); M6."""
-        return None
+        """Published ``domain.yaml`` (FR-DOM-02): by default the file next to the plug-in's
+        module. Its ``id``/``version`` must match the plug-in's."""
+        cached = self.__dict__.get("_definition_cache", False)
+        if cached is not False:
+            return cached  # type: ignore[no-any-return]
+        definition = None
+        path = Path(inspect.getfile(type(self))).parent / "domain.yaml"
+        if path.exists():
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            definition = validate_spec(DomainDefinition, data, str(path))
+            if (definition.id, definition.version) != (self.name, self.version):
+                raise PluginError(
+                    f"{path}: declares {definition.id} {definition.version} but the plug-in is "
+                    f"{self.name} {self.version}; keep them in sync (FR-DOM-10)"
+                )
+        self.__dict__["_definition_cache"] = definition
+        return definition
 
     @abstractmethod
     def create_model(self, bundle: ScenarioBundle, params: BaseModel | None) -> SimModel:
@@ -141,6 +166,18 @@ class DomainPlugin(ABC):
     def validate_scenario(self, bundle: ScenarioBundle) -> BaseModel | None:
         """Domain-level checks; returns validated params (FR-ENG-08)."""
         issues: list[ConfigIssue] = []
+        wanted = bundle.scenario.domain_version
+        if wanted is not None and wanted.split(".")[0] != self.version.split(".")[0]:
+            issues.append(
+                ConfigIssue(
+                    bundle.source,
+                    "domain_version",
+                    f"scenario was written for {self.name} {wanted} but {self.version} is "
+                    "installed (major version differs)",
+                    "migrate the scenario (see the domain's migration notes) and update "
+                    "domain_version",
+                )
+            )
         allowed = self.disruption_types()
         for n, d in enumerate(bundle.scenario.disruptions):
             if d.type not in allowed:
@@ -231,6 +268,7 @@ def facility_issues(bundle: ScenarioBundle) -> list[ConfigIssue]:
 class PluginRegistry:
     def __init__(self, plugins: Sequence[DomainPlugin] = ()) -> None:
         self._plugins: dict[str, DomainPlugin] = {}
+        self.errors: dict[str, str] = {}  # domain sources that failed to load
         for p in plugins:
             self.register(p)
 
@@ -278,4 +316,40 @@ class PluginRegistry:
         for ep in sorted(entry_points(group=group), key=lambda e: e.name):
             self.load(ep.value)
             found.append(ep.name)
+        return found
+
+    def load_tier0(self, path: Path | str) -> DomainPlugin:
+        """Register a config-only domain from its ``domain.yaml`` (FR-DOM-01)."""
+        eps = [ep for ep in entry_points(group=TIER0_GROUP) if ep.name == "process_network"]
+        if not eps:
+            raise PluginError(
+                "no Tier-0 engine installed (entry point simcore.tier0:process_network)"
+            )
+        plugin = eps[0].load()(Path(path))
+        self.register(plugin)
+        return plugin  # type: ignore[no-any-return]
+
+    def discover_tier0(self, search_path: list[Path] | None = None) -> list[str]:
+        """Register every ``<dir>/<domain>/domain.yaml`` with ``tier: 0`` on the search path.
+
+        Default search path: ``$SIMCORE_DOMAIN_PATH`` (os.pathsep-separated) followed
+        by the installed ``domains`` package directory.
+        """
+        if search_path is None:
+            search_path = [
+                Path(p) for p in os.environ.get(DOMAIN_PATH_ENV, "").split(os.pathsep) if p
+            ]
+            spec = importlib.util.find_spec("domains")
+            if spec is not None and spec.submodule_search_locations:
+                search_path += [Path(p) for p in spec.submodule_search_locations]
+        found = []
+        for root in search_path:
+            for path in sorted(root.glob("*/domain.yaml")):
+                try:
+                    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+                    if data.get("tier") == 0 and data.get("id") not in self._plugins:
+                        found.append(self.load_tier0(path).name)
+                except Exception as exc:  # a broken domain must not hide the others
+                    self.errors[str(path)] = str(exc)
+                    log.warning("skipping domain %s: %s", path, exc)
         return found

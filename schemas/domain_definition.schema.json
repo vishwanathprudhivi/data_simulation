@@ -259,6 +259,110 @@
       "title": "ExponentialDist",
       "type": "object"
     },
+    "FailureDef": {
+      "additionalProperties": false,
+      "description": "Random breakdowns: time between failures (while busy or idle) and repair time.",
+      "properties": {
+        "mtbf": {
+          "discriminator": {
+            "mapping": {
+              "constant": "#/$defs/ConstantDist",
+              "empirical": "#/$defs/EmpiricalDist",
+              "exponential": "#/$defs/ExponentialDist",
+              "gamma": "#/$defs/GammaDist",
+              "lognormal": "#/$defs/LognormalDist",
+              "normal": "#/$defs/NormalDist",
+              "triangular": "#/$defs/TriangularDist",
+              "uniform": "#/$defs/UniformDist",
+              "weibull": "#/$defs/WeibullDist"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ConstantDist"
+            },
+            {
+              "$ref": "#/$defs/ExponentialDist"
+            },
+            {
+              "$ref": "#/$defs/LognormalDist"
+            },
+            {
+              "$ref": "#/$defs/GammaDist"
+            },
+            {
+              "$ref": "#/$defs/WeibullDist"
+            },
+            {
+              "$ref": "#/$defs/NormalDist"
+            },
+            {
+              "$ref": "#/$defs/UniformDist"
+            },
+            {
+              "$ref": "#/$defs/TriangularDist"
+            },
+            {
+              "$ref": "#/$defs/EmpiricalDist"
+            }
+          ],
+          "title": "Mtbf"
+        },
+        "mttr": {
+          "discriminator": {
+            "mapping": {
+              "constant": "#/$defs/ConstantDist",
+              "empirical": "#/$defs/EmpiricalDist",
+              "exponential": "#/$defs/ExponentialDist",
+              "gamma": "#/$defs/GammaDist",
+              "lognormal": "#/$defs/LognormalDist",
+              "normal": "#/$defs/NormalDist",
+              "triangular": "#/$defs/TriangularDist",
+              "uniform": "#/$defs/UniformDist",
+              "weibull": "#/$defs/WeibullDist"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ConstantDist"
+            },
+            {
+              "$ref": "#/$defs/ExponentialDist"
+            },
+            {
+              "$ref": "#/$defs/LognormalDist"
+            },
+            {
+              "$ref": "#/$defs/GammaDist"
+            },
+            {
+              "$ref": "#/$defs/WeibullDist"
+            },
+            {
+              "$ref": "#/$defs/NormalDist"
+            },
+            {
+              "$ref": "#/$defs/UniformDist"
+            },
+            {
+              "$ref": "#/$defs/TriangularDist"
+            },
+            {
+              "$ref": "#/$defs/EmpiricalDist"
+            }
+          ],
+          "title": "Mttr"
+        }
+      },
+      "required": [
+        "mtbf",
+        "mttr"
+      ],
+      "title": "FailureDef",
+      "type": "object"
+    },
     "GammaDist": {
       "additionalProperties": false,
       "properties": {
@@ -685,7 +789,7 @@
     },
     "StationDef": {
       "additionalProperties": false,
-      "description": "Tier-0 ``process_network`` station.",
+      "description": "Tier-0 ``process_network`` station (FR-DOM-01).",
       "properties": {
         "batch_size": {
           "default": 1,
@@ -704,10 +808,12 @@
             }
           ],
           "default": null,
+          "description": "Max items waiting; full = upstream blocks.",
           "title": "Buffer Capacity"
         },
         "capacity": {
           "default": 1,
+          "description": "Parallel servers.",
           "minimum": 1,
           "title": "Capacity",
           "type": "integer"
@@ -731,7 +837,24 @@
             }
           ],
           "default": null,
+          "description": "Setup time when the item type changes.",
           "title": "Changeover"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "failures": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FailureDef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "id": {
           "maxLength": 128,
@@ -753,6 +876,7 @@
             }
           ],
           "default": null,
+          "description": "Operator type required while working (from the fleet).",
           "title": "Resource Type"
         },
         "service_time": {
@@ -807,6 +931,7 @@
             }
           ],
           "default": null,
+          "description": "Per batch; required unless the scenario overrides it.",
           "title": "Service Time"
         }
       },

@@ -21,6 +21,7 @@ def default_plugins(extra: Sequence[str] = ()) -> PluginRegistry:
     """Plug-ins from the ``simcore.domains`` entry points plus ``extra`` ``module:attr`` targets."""
     registry = PluginRegistry()
     registry.discover()
+    registry.discover_tier0()
     for target in extra:
         registry.load(target)
     return registry

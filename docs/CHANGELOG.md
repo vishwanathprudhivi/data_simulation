@@ -1,5 +1,23 @@
 # Changelog
 
+## M6 – Domain definitions & catalogs (2026-10-14)
+
+**Exit gate:** AC-DOM-03 (backend part: a lever added to `domain.yaml` appears in the
+lever catalog and capability manifest and can be applied, with no code change) and
+AC-SEM-01 (catalog part: a metric added to `domain.yaml` appears in the metric
+catalog) — passing. The API/chat/UI parts of these criteria close in M7/M10/M11.
+
+Implemented: FR-DOM-01 tiers and the generic Tier-0 `process_network` engine;
+FR-DOM-02 `domain.yaml` for warehouse (Tier 2), toy_queue (Tier 1) and the
+packaging line (Tier 0); FR-DOM-03 lever/metric/dimension catalogs and capability
+manifest (`simcore domains show`); FR-SEM-01/02 core metric and dimension catalogs;
+FR-SCG-01 lever application with type/bounds/choice validation and envelope flags;
+FR-DOM-10 domain version compatibility check; Tier-0 discovery on a search path
+with error reporting.
+
+Decisions: ADR-010. Schemas: `capability_manifest` added; `StationDef` gained
+`failures` and `description` (additive).
+
 ## M5 – Dispatch & policies (2026-10-14)
 
 **Exit gate:** AC-DSP-01 (in-memory and Redis queues pass the same conformance

@@ -11,7 +11,13 @@ from pydantic import BaseModel
 from simcore.specs.behaviors import BehaviorsSpec
 from simcore.specs.chart import ChartSpec
 from simcore.specs.common import SCHEMA_VERSION
-from simcore.specs.domain import DimensionCatalog, DomainDefinition, LeverCatalog, MetricCatalog
+from simcore.specs.domain import (
+    CapabilityManifest,
+    DimensionCatalog,
+    DomainDefinition,
+    LeverCatalog,
+    MetricCatalog,
+)
 from simcore.specs.experiment import ExperimentSpec
 from simcore.specs.facility import FacilityManifest
 from simcore.specs.findings import Findings
@@ -31,6 +37,7 @@ SPECS: dict[str, type[BaseModel]] = {
     "lever_catalog": LeverCatalog,
     "metric_catalog": MetricCatalog,
     "dimension_catalog": DimensionCatalog,
+    "capability_manifest": CapabilityManifest,
     "query_spec": QuerySpec,
     "chart_spec": ChartSpec,
     "findings": Findings,

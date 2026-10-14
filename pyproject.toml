@@ -39,6 +39,10 @@ simcore = "simcore.cli.main:cli"
 toy_queue = "domains.toy_queue:plugin"
 warehouse = "domains.warehouse:plugin"
 
+# FR-DOM-01: engine for config-only (Tier 0) domains found on the domain search path.
+[project.entry-points."simcore.tier0"]
+process_network = "domains.process_network:plugin_for"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/simcore", "domains"]
 

@@ -374,13 +374,32 @@ def domains() -> None:
 @click.option("--plugin", "plugins", multiple=True)
 @click.option("--json", "as_json", is_flag=True)
 def domains_list(plugins: tuple[str, ...], as_json: bool) -> None:
+    """Installed domains (entry points + Tier-0 domain.yaml on the search path)."""
     registry = _plugins(plugins)
     manifests = [registry.get(n).manifest().to_dict() for n in registry.names]
     if as_json:
-        click.echo(json.dumps(manifests, indent=2, default=str))
+        click.echo(
+            json.dumps({"domains": manifests, "errors": registry.errors}, indent=2, default=str)
+        )
         return
     for m in manifests:
         click.echo(f"{m['name']} {m['version']}: {m['description']}")
+    for path, err in registry.errors.items():
+        click.echo(click.style("broken: ", fg="red") + f"{path}: {err}", err=True)
+
+
+@domains.command("show")
+@click.argument("name")
+@click.option("--plugin", "plugins", multiple=True)
+def domains_show(name: str, plugins: tuple[str, ...]) -> None:
+    """Capability manifest: levers, metrics, dimensions, policies (FR-DOM-03)."""
+    from simcore.catalog import capability_manifest
+
+    try:
+        manifest = capability_manifest(_plugins(plugins).get(name))
+    except Exception as exc:
+        _fail(exc)
+    click.echo(json.dumps(manifest.model_dump(mode="json"), indent=2))
 
 
 def main() -> None:  # pragma: no cover

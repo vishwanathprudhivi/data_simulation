@@ -14,10 +14,13 @@ from simcore.specs.common import Duration, Identifier, SchemaVersion, SpecModel
 from simcore.specs.distributions import DistributionSpec
 
 __all__ = [
+    "CORE_DIMENSION_IDS",
+    "CapabilityManifest",
     "DimensionCatalog",
     "DimensionDef",
     "DomainDefinition",
     "EnvelopeBound",
+    "FailureDef",
     "LeverCatalog",
     "LeverDef",
     "MetricCatalog",
@@ -25,6 +28,19 @@ __all__ = [
     "NumberFormat",
     "derive_catalogs",
 ]
+
+
+#: Dimensions every run supports (declared in ``simcore.catalog.CORE_DIMENSIONS``).
+CORE_DIMENSION_IDS: tuple[str, ...] = (
+    "variant",
+    "replication",
+    "time_bucket",
+    "agent",
+    "agent_type",
+    "task_type",
+    "location",
+    "zone",
+)
 
 
 class NumberFormat(SpecModel):
@@ -97,16 +113,33 @@ class EntityTypeDef(SpecModel):
     attributes: dict[str, str] = Field(default_factory=dict, description="name -> type")
 
 
+class FailureDef(SpecModel):
+    """Random breakdowns: time between failures (while busy or idle) and repair time."""
+
+    mtbf: DistributionSpec
+    mttr: DistributionSpec
+
+
 class StationDef(SpecModel):
-    """Tier-0 ``process_network`` station."""
+    """Tier-0 ``process_network`` station (FR-DOM-01)."""
 
     id: Identifier
-    resource_type: Identifier | None = None
-    capacity: int = Field(default=1, ge=1)
-    service_time: DistributionSpec | None = None
+    description: str = ""
+    resource_type: Identifier | None = Field(
+        default=None, description="Operator type required while working (from the fleet)."
+    )
+    capacity: int = Field(default=1, ge=1, description="Parallel servers.")
+    service_time: DistributionSpec | None = Field(
+        default=None, description="Per batch; required unless the scenario overrides it."
+    )
     batch_size: int = Field(default=1, ge=1)
-    buffer_capacity: int | None = Field(default=None, ge=0)
-    changeover: Duration | None = None
+    buffer_capacity: int | None = Field(
+        default=None, ge=0, description="Max items waiting; full = upstream blocks."
+    )
+    changeover: Duration | None = Field(
+        default=None, description="Setup time when the item type changes."
+    )
+    failures: FailureDef | None = None
 
 
 class RoutingDef(SpecModel):
@@ -117,6 +150,25 @@ class RoutingDef(SpecModel):
 class ProcessDef(SpecModel):
     stations: list[StationDef] = Field(default_factory=list)
     routings: list[RoutingDef] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _check(self) -> ProcessDef:
+        ids = [st.id for st in self.stations]
+        dupes = sorted({i for i in ids if ids.count(i) > 1})
+        if dupes:
+            raise ValueError(f"duplicate station ids: {dupes}")
+        for r in self.routings:
+            unknown = [step for step in r.steps if step not in ids]
+            if unknown:
+                raise ValueError(
+                    f"routing for {r.work_item_type!r} uses unknown stations {unknown}; "
+                    f"known: {ids}"
+                )
+        types = [r.work_item_type for r in self.routings]
+        dupes = sorted({t for t in types if types.count(t) > 1})
+        if dupes:
+            raise ValueError(f"more than one routing for work item types {dupes}")
+        return self
 
 
 class DomainDefinition(SpecModel):
@@ -151,7 +203,10 @@ class DomainDefinition(SpecModel):
             dupes = sorted({i for i in ids if ids.count(i) > 1})
             if dupes:
                 raise ValueError(f"duplicate {label} ids: {dupes}")
-        dims = {d.id for d in self.dimensions}
+        dims = {d.id for d in self.dimensions} | set(CORE_DIMENSION_IDS)
+        for d in self.dimensions:
+            if d.parent is not None and d.parent not in dims:
+                raise ValueError(f"dimension {d.id!r} has unknown parent {d.parent!r}")
         for m in self.metrics:
             unknown = sorted(set(m.allowed_dimensions) - dims)
             if unknown:
@@ -170,6 +225,24 @@ class DomainDefinition(SpecModel):
         if self.tier in (1, 2) and self.plugin is None:
             raise ValueError(f"tier {self.tier} domains must name a 'plugin' module")
         return self
+
+
+class CapabilityManifest(SpecModel):
+    """Everything a domain lets users change, measure and slice (FR-DOM-03)."""
+
+    schema_version: SchemaVersion = "1.0"
+    domain: Identifier
+    domain_version: str
+    tier: Literal[0, 1, 2]
+    name: str
+    description: str = ""
+    levers: list[LeverDef]
+    metrics: list[MetricDef]
+    dimensions: list[DimensionDef]
+    policies: list[str]
+    disruption_types: list[str]
+    entity_types: list[str]
+    envelope: list[EnvelopeBound] = Field(default_factory=list)
 
 
 class LeverCatalog(SpecModel):

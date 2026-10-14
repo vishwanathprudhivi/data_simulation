@@ -1,0 +1,106 @@
+# Published domain definition (FR-DOM-02/03): what the API, chat and UI may change and measure.
+schema_version: "1.0"
+id: warehouse
+name: Warehouse outbound
+version: 0.3.0
+tier: 2
+plugin: domains.warehouse
+description: >-
+  Outbound pick-and-stage with triple pallet jacks and selectors; congestion and
+  travel penalties derived from aisle geometry.
+resource_types:
+  - {id: pallet_jack_operator, description: Operator on a triple pallet jack (<= 3 pallets/trip)}
+  - {id: selector, description: Selector picking cases on foot}
+work_item_types:
+  - {id: pick_and_stage, description: Move 1-3 pallets from a pick face to a staging lane}
+entity_types:
+  - {id: pick_face, description: Bay location along an aisle}
+  - {id: staging_lane, description: Outbound lane in front of a dock door}
+zone_semantics:
+  aisle: picking aisle (single- or two-lane depending on width)
+  staging_lane: outbound staging area
+policies: [nearest_task, fifo, zone_affinity, solver_callback, plan_follower]
+dimensions:
+  - {id: dock_door, display_name: Dock door, kind: categorical, parent: location}
+metrics:
+  - id: pallets_per_labor_hour
+    display_name: Pallets per labor hour
+    description: Pallets staged per available operator hour (PPLH equivalent)
+    unit: 1/h
+    formula: pallets_per_labor_hour
+    direction: higher_is_better
+    allowed_dimensions: [variant, replication]
+    format: {kind: number, decimals: 1}
+  - id: travel_distance_per_pallet
+    display_name: Travel distance per pallet
+    unit: m
+    formula: travel_distance_per_pallet
+    direction: lower_is_better
+    allowed_dimensions: [variant, replication]
+    format: {kind: number, decimals: 1}
+  - id: bay_colocation_time
+    display_name: Bay co-location time
+    description: Agent-seconds spent picking while another agent works the same bay group
+    unit: s
+    formula: bay_colocation_time
+    direction: lower_is_better
+    allowed_dimensions: [variant, replication]
+    format: {kind: duration, decimals: 0}
+  - id: dock_on_time_rate
+    display_name: Dock departure on-time rate
+    description: Share of departures (lane, due time) whose pallets were all staged in time
+    unit: "1"
+    formula: dock_on_time_rate
+    direction: higher_is_better
+    allowed_dimensions: [variant, replication]
+    format: {kind: percent, decimals: 1}
+  - id: pallets_moved
+    display_name: Pallets moved
+    unit: "1"
+    formula: pallets_moved
+    direction: higher_is_better
+    allowed_dimensions: [variant, replication]
+    format: {kind: integer, decimals: 0}
+levers:
+  - id: jacks
+    display_name: Pallet jack operators
+    description: Number of triple pallet jack operators on shift
+    path: fleet.pallet_jack_operator.count
+    type: int
+    min: 1
+    max: 60
+    default: 12
+  - id: dispatch_policy
+    display_name: Dispatch policy
+    path: policy.name
+    type: enum
+    choices: [nearest_task, fifo, zone_affinity, solver_callback]
+    default: nearest_task
+  - id: colocation_penalty
+    display_name: Bay co-location penalty
+    description: Pick-time increase per other agent working the same bay group
+    path: interaction.colocation.penalty_per_agent
+    type: float
+    min: 0
+    max: 2
+    default: 0.3
+  - id: deadlock_strategy
+    display_name: Deadlock resolution
+    path: interaction.deadlock.strategy
+    type: enum
+    choices: [priority_yield, reroute, timeout]
+    default: priority_yield
+  - id: shift_length
+    display_name: Shift length
+    path: duration
+    type: duration
+    unit: s
+    min: 3600
+    max: 43200
+    default: 14400
+envelope:
+  - {lever: jacks, min: 8, max: 30}
+  - {lever: colocation_penalty, min: 0.1, max: 0.6}
+asset_bindings:
+  pallet_jack_operator: placeholder://capsule
+  selector: placeholder://capsule

@@ -18,6 +18,7 @@ onboarding kit.
 | M3 Facility + interaction (warehouse domain) | done |
 | M4 Omniverse adapter | code done; Isaac/GPU verification pending |
 | M5 Dispatch & policies (Redis, plans, solver) | done |
+| M6 Domain definitions, catalogs, Tier-0 process network | done |
 | M4 – M14 | in progress |
 
 ## Quick start
@@ -36,6 +37,10 @@ make lint test                  # ruff, mypy, import-linter; tests (no GPU/Redis
 .venv/bin/simcore validate examples/facilities/broken.yaml          # shows actionable errors
 .venv/bin/simcore run examples/scenarios/warehouse/narrow_aisles.yaml
 .venv/bin/simcore experiment examples/experiments/warehouse_fleet_sweep.yaml --out runs
+
+# config-only (Tier 0) domain: packaging line defined entirely in domains/packaging_line/domain.yaml
+.venv/bin/simcore domains show packaging_line
+.venv/bin/simcore run examples/scenarios/packaging_line/baseline.yaml
 
 # experiments: baseline + variants x replications with CRN, CIs and a report
 .venv/bin/simcore experiment examples/experiments/mmc_servers.yaml --out runs --parallel 4

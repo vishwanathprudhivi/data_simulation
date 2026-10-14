@@ -184,7 +184,7 @@ def test_domain_definition_cross_reference_errors() -> None:
                         "display_name": "M",
                         "unit": "s",
                         "formula": "m",
-                        "allowed_dimensions": ["zone"],
+                        "allowed_dimensions": ["shelf_level"],
                     }
                 ],
             }
