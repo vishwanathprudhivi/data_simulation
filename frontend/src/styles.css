@@ -60,3 +60,10 @@ tr.selected { background: #eef3ff; }
 .hud-item b { font-size: 18px; }
 .captions p { margin: 2px 0; }
 .inject input, .inject select { max-width: 220px; }
+/* keep each column scrolling on its own; the page itself never scrolls */
+html, body, #root { height: 100%; overflow: hidden; }
+.app { height: 100vh; overflow: hidden; }
+.main, .chat { min-height: 0; height: 100vh; }
+.messages { min-height: 0; }
+.chat .card { overflow-x: auto; font-size: 12px; }
+.nav .badge { color: #1d2330; }
