@@ -1,0 +1,242 @@
+{
+  "$defs": {
+    "Comparison": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Estimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ci_excludes_zero": {
+          "title": "Ci Excludes Zero",
+          "type": "boolean"
+        },
+        "extrapolated": {
+          "default": false,
+          "title": "Extrapolated",
+          "type": "boolean"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "paired": {
+          "default": true,
+          "description": "False when CRN was not used.",
+          "title": "Paired",
+          "type": "boolean"
+        },
+        "paired_diff": {
+          "$ref": "#/$defs/Estimate"
+        },
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "significant": {
+          "title": "Significant",
+          "type": "boolean"
+        },
+        "variant": {
+          "title": "Variant",
+          "type": "string"
+        },
+        "variant_estimate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Estimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "variant",
+        "metric",
+        "paired_diff",
+        "ci_excludes_zero",
+        "significant",
+        "ref_id"
+      ],
+      "title": "Comparison",
+      "type": "object"
+    },
+    "Driver": {
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "share_of_delta": {
+          "title": "Share Of Delta",
+          "type": "number"
+        }
+      },
+      "required": [
+        "metric",
+        "share_of_delta",
+        "ref_id"
+      ],
+      "title": "Driver",
+      "type": "object"
+    },
+    "Estimate": {
+      "additionalProperties": false,
+      "properties": {
+        "ci": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Ci",
+          "type": "array"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        }
+      },
+      "required": [
+        "mean",
+        "ci"
+      ],
+      "title": "Estimate",
+      "type": "object"
+    },
+    "FidelitySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "promoted": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Promoted",
+          "type": "array"
+        },
+        "promoted_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "logical",
+                "kinematic",
+                "physics"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Promoted Mode"
+        },
+        "screen": {
+          "default": "logical",
+          "enum": [
+            "logical",
+            "kinematic",
+            "physics"
+          ],
+          "title": "Screen",
+          "type": "string"
+        }
+      },
+      "title": "FidelitySummary",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:findings:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "baseline": {
+      "title": "Baseline",
+      "type": "string"
+    },
+    "caveats": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caveats",
+      "type": "array"
+    },
+    "comparisons": {
+      "items": {
+        "$ref": "#/$defs/Comparison"
+      },
+      "title": "Comparisons",
+      "type": "array"
+    },
+    "confidence": {
+      "exclusiveMaximum": 1,
+      "exclusiveMinimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "drivers": {
+      "items": {
+        "$ref": "#/$defs/Driver"
+      },
+      "title": "Drivers",
+      "type": "array"
+    },
+    "experiment_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "fidelity": {
+      "$ref": "#/$defs/FidelitySummary"
+    },
+    "n_replications": {
+      "minimum": 1,
+      "title": "N Replications",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "experiment_id",
+    "baseline",
+    "n_replications",
+    "confidence"
+  ],
+  "title": "Findings",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

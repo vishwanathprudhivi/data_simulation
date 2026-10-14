@@ -1,0 +1,24 @@
+# Generic two-aisle layout (metres). Kinds are domain-defined tags.
+schema_version: "1.0"
+id: two_aisle
+name: Two aisles with a cross aisle
+version: 0.1.0
+zones:
+  - {id: aisle_1, kind: aisle, polygon: [[0, 0], [2.4, 0], [2.4, 30], [0, 30]]}
+  - {id: aisle_2, kind: aisle, polygon: [[6, 0], [8.4, 0], [8.4, 30], [6, 30]]}
+  - {id: staging, kind: staging, polygon: [[0, -6], [8.4, -6], [8.4, -1], [0, -1]], capacity: 12}
+nodes:
+  - {id: n_a1_s, position: [1.2, 0], zone: aisle_1}
+  - {id: n_a1_n, position: [1.2, 30], zone: aisle_1}
+  - {id: n_a2_s, position: [7.2, 0], zone: aisle_2}
+  - {id: n_a2_n, position: [7.2, 30], zone: aisle_2}
+  - {id: n_stage, position: [4.2, -3], zone: staging}
+edges:
+  - {id: e_a1, from: n_a1_s, to: n_a1_n, width: 2.4 m, zone: aisle_1}
+  - {id: e_a2, from: n_a2_s, to: n_a2_n, width: 2.4 m, directed: true, zone: aisle_2}
+  - {id: e_cross, from: n_a1_s, to: n_a2_s, width: 3 m}
+  - {id: e_stage, from: n_stage, to: n_a1_s, width: 3 m, length: 4.5}
+locations:
+  - {id: pick_A, kind: pick_face, node: n_a1_n, zone: aisle_1}
+  - {id: pick_B, kind: pick_face, node: n_a2_n, zone: aisle_2}
+  - {id: stage_1, kind: staging_lane, node: n_stage, zone: staging, capacity: 6}

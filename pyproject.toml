@@ -1,0 +1,125 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simcore"
+version = "0.1.0"
+description = "Reusable, domain-agnostic simulation engine (logical / Omniverse kinematic / physics) with experiment and analytics layers."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pyarrow>=14",
+    "click>=8.1",
+]
+
+[project.optional-dependencies]
+redis = ["redis>=5"]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "import-linter>=2.0",
+    "types-PyYAML",
+    "jsonschema>=4",
+    "pre-commit>=3",
+]
+
+[project.scripts]
+simcore = "simcore.cli.main:cli"
+
+# FR-ENG-05: domains are discovered through this entry-point group.
+[project.entry-points."simcore.domains"]
+toy_queue = "domains.toy_queue:plugin"
+warehouse = "domains.warehouse:plugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/simcore", "domains"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"schemas" = "simcore/_schemas"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "isaac: requires an Isaac Sim install and GPU (skipped in CI)",
+    "redis: requires a reachable Redis server (skipped if unavailable)",
+    "live_llm: makes a live LLM call (never run in CI)",
+    "slow: long-running statistical validation",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "domains", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "T20"]
+ignore = ["RUF012", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20"]
+
+[tool.mypy]
+python_version = "3.10"
+mypy_path = "src"
+packages = ["simcore"]
+plugins = ["pydantic.mypy"]
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["simcore.core.*", "simcore.specs.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["simcore.adapters.omniverse.*"]
+ignore_errors = true
+
+[tool.coverage.run]
+source = ["simcore"]
+omit = ["src/simcore/adapters/omniverse/*"]
+
+# AC-ENG-04 / CLAUDE.md rules 1-2. Do not weaken these contracts.
+[tool.importlinter]
+root_packages = ["simcore", "domains"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "simcore never imports domain packages"
+type = "forbidden"
+source_modules = ["simcore"]
+forbidden_modules = ["domains"]
+
+[[tool.importlinter.contracts]]
+name = "Only the omniverse adapter imports omni/isaacsim/pxr"
+type = "forbidden"
+source_modules = [
+    "simcore.core",
+    "simcore.specs",
+    "simcore.experiment",
+    "simcore.adapters.logical",
+    "simcore.cli",
+    "simcore.api",
+    "domains",
+]
+forbidden_modules = ["omni", "isaacsim", "pxr"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "core depends only on core and specs"
+type = "forbidden"
+source_modules = ["simcore.core"]
+forbidden_modules = [
+    "simcore.experiment",
+    "simcore.adapters",
+    "simcore.cli",
+    "simcore.api",
+]

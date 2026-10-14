@@ -1,0 +1,16 @@
+# Server-count sweep with common random numbers (FR-EXP-02/03).
+schema_version: "1.0"
+id: mmc_servers
+name: M/M/c server sweep
+base_scenario: ../scenarios/toy_queue/mmc_baseline.yaml
+factors:
+  - name: servers
+    path: fleet.server.count
+    levels: [3, 4, 5]
+design: full_factorial
+include_baseline: false
+replications: 10
+master_seed: 2024
+crn: true
+confidence: 0.95
+kpis: [wait_time_mean, utilization, throughput]

@@ -1,0 +1,386 @@
+{
+  "$defs": {
+    "EdgeSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "directed": {
+          "default": false,
+          "description": "True for one-way segments.",
+          "title": "Directed",
+          "type": "boolean"
+        },
+        "from": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "From",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "length": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "length quantity: SI number or string with unit, e.g. '2.4 m'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Metres; computed from node positions when omitted.",
+          "title": "Length"
+        },
+        "max_speed": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "speed quantity: SI number or string with unit, e.g. '1.2 m/s'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Speed"
+        },
+        "to": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "To",
+          "type": "string"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "description": "Clear traversable width in metres.",
+          "title": "Width"
+        },
+        "zone": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "width"
+      ],
+      "title": "EdgeSpec",
+      "type": "object"
+    },
+    "LocationSpec": {
+      "additionalProperties": false,
+      "description": "A place where work happens; attached to a navigation node.",
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "capacity": {
+          "default": 1,
+          "minimum": 0,
+          "title": "Capacity",
+          "type": "integer"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "node": {
+          "description": "Navigation node this location is reached from.",
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Node",
+          "type": "string"
+        },
+        "zone": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "node"
+      ],
+      "title": "LocationSpec",
+      "type": "object"
+    },
+    "NodeSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            }
+          ],
+          "title": "Position"
+        },
+        "zone": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone"
+        }
+      },
+      "required": [
+        "id",
+        "position"
+      ],
+      "title": "NodeSpec",
+      "type": "object"
+    },
+    "ZoneSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capacity"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Domain-defined semantic tag, e.g. a zone type.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "polygon": {
+          "description": "Floor-plan polygon in metres (x, y).",
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Polygon",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "title": "ZoneSpec",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:facility:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``facility.yaml``. Immutable during a run except via scenario events (FR-FAC-03).",
+  "properties": {
+    "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/EdgeSpec"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "locations": {
+      "items": {
+        "$ref": "#/$defs/LocationSpec"
+      },
+      "title": "Locations",
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/NodeSpec"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "usd_stage": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Path to the USD stage; optional in logical mode.",
+      "title": "Usd Stage"
+    },
+    "version": {
+      "default": "0.1.0",
+      "description": "Manifest version (FR-FAC-07).",
+      "title": "Version",
+      "type": "string"
+    },
+    "zones": {
+      "items": {
+        "$ref": "#/$defs/ZoneSpec"
+      },
+      "title": "Zones",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "title": "FacilityManifest",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

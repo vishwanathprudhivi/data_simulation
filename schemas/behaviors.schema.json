@@ -1,0 +1,781 @@
+{
+  "$defs": {
+    "AgentTypeSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "capacity": {
+          "default": 1.0,
+          "description": "Work units carried per trip.",
+          "exclusiveMinimum": 0,
+          "title": "Capacity",
+          "type": "number"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "footprint": {
+          "$ref": "#/$defs/FootprintSpec"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "service_times": {
+          "additionalProperties": {
+            "discriminator": {
+              "mapping": {
+                "constant": "#/$defs/ConstantDist",
+                "empirical": "#/$defs/EmpiricalDist",
+                "exponential": "#/$defs/ExponentialDist",
+                "gamma": "#/$defs/GammaDist",
+                "lognormal": "#/$defs/LognormalDist",
+                "normal": "#/$defs/NormalDist",
+                "triangular": "#/$defs/TriangularDist",
+                "uniform": "#/$defs/UniformDist",
+                "weibull": "#/$defs/WeibullDist"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ConstantDist"
+              },
+              {
+                "$ref": "#/$defs/ExponentialDist"
+              },
+              {
+                "$ref": "#/$defs/LognormalDist"
+              },
+              {
+                "$ref": "#/$defs/GammaDist"
+              },
+              {
+                "$ref": "#/$defs/WeibullDist"
+              },
+              {
+                "$ref": "#/$defs/NormalDist"
+              },
+              {
+                "$ref": "#/$defs/UniformDist"
+              },
+              {
+                "$ref": "#/$defs/TriangularDist"
+              },
+              {
+                "$ref": "#/$defs/EmpiricalDist"
+              }
+            ]
+          },
+          "description": "Named service-time distributions (seconds).",
+          "title": "Service Times",
+          "type": "object"
+        },
+        "shift": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShiftSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "speed_multiplier": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "constant": "#/$defs/ConstantDist",
+                  "empirical": "#/$defs/EmpiricalDist",
+                  "exponential": "#/$defs/ExponentialDist",
+                  "gamma": "#/$defs/GammaDist",
+                  "lognormal": "#/$defs/LognormalDist",
+                  "normal": "#/$defs/NormalDist",
+                  "triangular": "#/$defs/TriangularDist",
+                  "uniform": "#/$defs/UniformDist",
+                  "weibull": "#/$defs/WeibullDist"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ConstantDist"
+                },
+                {
+                  "$ref": "#/$defs/ExponentialDist"
+                },
+                {
+                  "$ref": "#/$defs/LognormalDist"
+                },
+                {
+                  "$ref": "#/$defs/GammaDist"
+                },
+                {
+                  "$ref": "#/$defs/WeibullDist"
+                },
+                {
+                  "$ref": "#/$defs/NormalDist"
+                },
+                {
+                  "$ref": "#/$defs/UniformDist"
+                },
+                {
+                  "$ref": "#/$defs/TriangularDist"
+                },
+                {
+                  "$ref": "#/$defs/EmpiricalDist"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per-agent multiplier drawn once per agent (stream agent_speed).",
+          "title": "Speed Multiplier"
+        },
+        "speeds": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                "type": "string"
+              }
+            ],
+            "description": "speed quantity: SI number or string with unit, e.g. '1.2 m/s'"
+          },
+          "description": "Named speed profile, e.g. {empty: 1.5, loaded: 1.1}.",
+          "title": "Speeds",
+          "type": "object"
+        },
+        "state_machine": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StateMachineSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "AgentTypeSpec",
+      "type": "object"
+    },
+    "BreakSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "Duration"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "Start"
+        }
+      },
+      "required": [
+        "start",
+        "duration"
+      ],
+      "title": "BreakSpec",
+      "type": "object"
+    },
+    "ConstantDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "constant",
+          "default": "constant",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "ConstantDist",
+      "type": "object"
+    },
+    "EmpiricalDist": {
+      "additionalProperties": false,
+      "description": "Resample from observed values (optionally weighted).",
+      "properties": {
+        "kind": {
+          "const": "empirical",
+          "default": "empirical",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Values",
+          "type": "array"
+        },
+        "weights": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weights"
+        }
+      },
+      "required": [
+        "values"
+      ],
+      "title": "EmpiricalDist",
+      "type": "object"
+    },
+    "ExponentialDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "exponential",
+          "default": "exponential",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mean": {
+          "exclusiveMinimum": 0,
+          "title": "Mean",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mean"
+      ],
+      "title": "ExponentialDist",
+      "type": "object"
+    },
+    "FootprintSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 1.0,
+          "description": "length quantity: SI number or string with unit, e.g. '2.4 m'",
+          "title": "Length"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 1.0,
+          "description": "length quantity: SI number or string with unit, e.g. '2.4 m'",
+          "title": "Width"
+        }
+      },
+      "title": "FootprintSpec",
+      "type": "object"
+    },
+    "GammaDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "gamma",
+          "default": "gamma",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scale": {
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "shape": {
+          "exclusiveMinimum": 0,
+          "title": "Shape",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "shape",
+        "scale"
+      ],
+      "title": "GammaDist",
+      "type": "object"
+    },
+    "LognormalDist": {
+      "additionalProperties": false,
+      "description": "Lognormal with ``mu``/``sigma`` of the underlying normal (natural log).",
+      "properties": {
+        "kind": {
+          "const": "lognormal",
+          "default": "lognormal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mu": {
+          "title": "Mu",
+          "type": "number"
+        },
+        "sigma": {
+          "exclusiveMinimum": 0,
+          "title": "Sigma",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mu",
+        "sigma"
+      ],
+      "title": "LognormalDist",
+      "type": "object"
+    },
+    "NormalDist": {
+      "additionalProperties": false,
+      "description": "Normal, optionally truncated below at ``min`` by resampling.",
+      "properties": {
+        "kind": {
+          "const": "normal",
+          "default": "normal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "sd": {
+          "exclusiveMinimum": 0,
+          "title": "Sd",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mean",
+        "sd"
+      ],
+      "title": "NormalDist",
+      "type": "object"
+    },
+    "ShiftSpec": {
+      "additionalProperties": false,
+      "description": "Availability schedule relative to sim start (FR-AGT-07).",
+      "properties": {
+        "breaks": {
+          "items": {
+            "$ref": "#/$defs/BreakSpec"
+          },
+          "title": "Breaks",
+          "type": "array"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 0.0,
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "Start"
+        }
+      },
+      "title": "ShiftSpec",
+      "type": "object"
+    },
+    "StateMachineSpec": {
+      "additionalProperties": false,
+      "description": "Declarative, visualizable state machine (FR-AGT-03).",
+      "properties": {
+        "initial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Initial",
+          "type": "string"
+        },
+        "states": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "States",
+          "type": "array"
+        },
+        "transitions": {
+          "items": {
+            "$ref": "#/$defs/TransitionSpec"
+          },
+          "title": "Transitions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "initial",
+        "states"
+      ],
+      "title": "StateMachineSpec",
+      "type": "object"
+    },
+    "TransitionSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "From",
+          "type": "string"
+        },
+        "on": {
+          "description": "Event or condition that triggers the transition.",
+          "title": "On",
+          "type": "string"
+        },
+        "to": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "on"
+      ],
+      "title": "TransitionSpec",
+      "type": "object"
+    },
+    "TriangularDist": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "kind": {
+          "const": "triangular",
+          "default": "triangular",
+          "title": "Kind",
+          "type": "string"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "mode": {
+          "title": "Mode",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "low",
+        "mode",
+        "high"
+      ],
+      "title": "TriangularDist",
+      "type": "object"
+    },
+    "UniformDist": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "kind": {
+          "const": "uniform",
+          "default": "uniform",
+          "title": "Kind",
+          "type": "string"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "UniformDist",
+      "type": "object"
+    },
+    "WeibullDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "weibull",
+          "default": "weibull",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scale": {
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "shape": {
+          "exclusiveMinimum": 0,
+          "title": "Shape",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "shape",
+        "scale"
+      ],
+      "title": "WeibullDist",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:behaviors:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``behaviors.yaml``.",
+  "properties": {
+    "agent_types": {
+      "items": {
+        "$ref": "#/$defs/AgentTypeSpec"
+      },
+      "minItems": 1,
+      "title": "Agent Types",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent_types"
+  ],
+  "title": "BehaviorsSpec",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

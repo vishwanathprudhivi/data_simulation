@@ -1,0 +1,1223 @@
+{
+  "$defs": {
+    "BeatSpec": {
+      "additionalProperties": false,
+      "description": "Scripted demo beat (FR-SCN-06).",
+      "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "At"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "narration": {
+          "default": "",
+          "title": "Narration",
+          "type": "string"
+        },
+        "pause": {
+          "default": false,
+          "title": "Pause",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "at"
+      ],
+      "title": "BeatSpec",
+      "type": "object"
+    },
+    "ConstantDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "constant",
+          "default": "constant",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "ConstantDist",
+      "type": "object"
+    },
+    "DisruptionSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sim-time start (seconds).",
+          "title": "At"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = until end of run.",
+          "title": "Duration"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Entity id, 'type:<entity type>' or 'tag:<tag>' selecting affected entities.",
+          "title": "Target"
+        },
+        "trigger": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TriggerSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "description": "Core type (see CORE_DISRUPTION_TYPES) or a domain type.",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "DisruptionSpec",
+      "type": "object"
+    },
+    "EmpiricalDist": {
+      "additionalProperties": false,
+      "description": "Resample from observed values (optionally weighted).",
+      "properties": {
+        "kind": {
+          "const": "empirical",
+          "default": "empirical",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Values",
+          "type": "array"
+        },
+        "weights": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weights"
+        }
+      },
+      "required": [
+        "values"
+      ],
+      "title": "EmpiricalDist",
+      "type": "object"
+    },
+    "ExponentialDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "exponential",
+          "default": "exponential",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mean": {
+          "exclusiveMinimum": 0,
+          "title": "Mean",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mean"
+      ],
+      "title": "ExponentialDist",
+      "type": "object"
+    },
+    "FleetEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Agent Type",
+          "type": "string"
+        },
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "agent_type",
+        "count"
+      ],
+      "title": "FleetEntry",
+      "type": "object"
+    },
+    "GammaDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "gamma",
+          "default": "gamma",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scale": {
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "shape": {
+          "exclusiveMinimum": 0,
+          "title": "Shape",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "shape",
+        "scale"
+      ],
+      "title": "GammaDist",
+      "type": "object"
+    },
+    "ListDemand": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "list",
+          "default": "list",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stream": {
+          "default": "demand",
+          "description": "Named RNG stream for this source.",
+          "title": "Stream",
+          "type": "string"
+        },
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/TaskSpec"
+          },
+          "title": "Tasks",
+          "type": "array"
+        }
+      },
+      "title": "ListDemand",
+      "type": "object"
+    },
+    "LognormalDist": {
+      "additionalProperties": false,
+      "description": "Lognormal with ``mu``/``sigma`` of the underlying normal (natural log).",
+      "properties": {
+        "kind": {
+          "const": "lognormal",
+          "default": "lognormal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mu": {
+          "title": "Mu",
+          "type": "number"
+        },
+        "sigma": {
+          "exclusiveMinimum": 0,
+          "title": "Sigma",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mu",
+        "sigma"
+      ],
+      "title": "LognormalDist",
+      "type": "object"
+    },
+    "NormalDist": {
+      "additionalProperties": false,
+      "description": "Normal, optionally truncated below at ``min`` by resampling.",
+      "properties": {
+        "kind": {
+          "const": "normal",
+          "default": "normal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "sd": {
+          "exclusiveMinimum": 0,
+          "title": "Sd",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "mean",
+        "sd"
+      ],
+      "title": "NormalDist",
+      "type": "object"
+    },
+    "PolicyRef": {
+      "additionalProperties": false,
+      "properties": {
+        "assignment": {
+          "default": "pull",
+          "description": "pull: idle agents request work; push: dispatcher assigns.",
+          "enum": [
+            "pull",
+            "push"
+          ],
+          "title": "Assignment",
+          "type": "string"
+        },
+        "name": {
+          "default": "fifo",
+          "title": "Name",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "title": "PolicyRef",
+      "type": "object"
+    },
+    "ReplayDemand": {
+      "additionalProperties": false,
+      "description": "Replay of a historical CSV (columns per ``columns`` mapping, times in seconds).",
+      "properties": {
+        "columns": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Map task field -> CSV column; defaults to identical names.",
+          "title": "Columns",
+          "type": "object"
+        },
+        "kind": {
+          "const": "replay",
+          "default": "replay",
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "stream": {
+          "default": "demand",
+          "description": "Named RNG stream for this source.",
+          "title": "Stream",
+          "type": "string"
+        },
+        "time_offset": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 0.0,
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "Time Offset"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "ReplayDemand",
+      "type": "object"
+    },
+    "StochasticDemand": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "destinations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Destinations",
+          "type": "array"
+        },
+        "due_after": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "constant": "#/$defs/ConstantDist",
+                  "empirical": "#/$defs/EmpiricalDist",
+                  "exponential": "#/$defs/ExponentialDist",
+                  "gamma": "#/$defs/GammaDist",
+                  "lognormal": "#/$defs/LognormalDist",
+                  "normal": "#/$defs/NormalDist",
+                  "triangular": "#/$defs/TriangularDist",
+                  "uniform": "#/$defs/UniformDist",
+                  "weibull": "#/$defs/WeibullDist"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ConstantDist"
+                },
+                {
+                  "$ref": "#/$defs/ExponentialDist"
+                },
+                {
+                  "$ref": "#/$defs/LognormalDist"
+                },
+                {
+                  "$ref": "#/$defs/GammaDist"
+                },
+                {
+                  "$ref": "#/$defs/WeibullDist"
+                },
+                {
+                  "$ref": "#/$defs/NormalDist"
+                },
+                {
+                  "$ref": "#/$defs/UniformDist"
+                },
+                {
+                  "$ref": "#/$defs/TriangularDist"
+                },
+                {
+                  "$ref": "#/$defs/EmpiricalDist"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Due time = release + draw (seconds).",
+          "title": "Due After"
+        },
+        "interarrival": {
+          "discriminator": {
+            "mapping": {
+              "constant": "#/$defs/ConstantDist",
+              "empirical": "#/$defs/EmpiricalDist",
+              "exponential": "#/$defs/ExponentialDist",
+              "gamma": "#/$defs/GammaDist",
+              "lognormal": "#/$defs/LognormalDist",
+              "normal": "#/$defs/NormalDist",
+              "triangular": "#/$defs/TriangularDist",
+              "uniform": "#/$defs/UniformDist",
+              "weibull": "#/$defs/WeibullDist"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ConstantDist"
+            },
+            {
+              "$ref": "#/$defs/ExponentialDist"
+            },
+            {
+              "$ref": "#/$defs/LognormalDist"
+            },
+            {
+              "$ref": "#/$defs/GammaDist"
+            },
+            {
+              "$ref": "#/$defs/WeibullDist"
+            },
+            {
+              "$ref": "#/$defs/NormalDist"
+            },
+            {
+              "$ref": "#/$defs/UniformDist"
+            },
+            {
+              "$ref": "#/$defs/TriangularDist"
+            },
+            {
+              "$ref": "#/$defs/EmpiricalDist"
+            }
+          ],
+          "title": "Interarrival"
+        },
+        "kind": {
+          "const": "stochastic",
+          "default": "stochastic",
+          "title": "Kind",
+          "type": "string"
+        },
+        "max_tasks": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Tasks"
+        },
+        "origins": {
+          "description": "Uniform choice if non-empty.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Origins",
+          "type": "array"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "constant": "#/$defs/ConstantDist",
+                  "empirical": "#/$defs/EmpiricalDist",
+                  "exponential": "#/$defs/ExponentialDist",
+                  "gamma": "#/$defs/GammaDist",
+                  "lognormal": "#/$defs/LognormalDist",
+                  "normal": "#/$defs/NormalDist",
+                  "triangular": "#/$defs/TriangularDist",
+                  "uniform": "#/$defs/UniformDist",
+                  "weibull": "#/$defs/WeibullDist"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ConstantDist"
+                },
+                {
+                  "$ref": "#/$defs/ExponentialDist"
+                },
+                {
+                  "$ref": "#/$defs/LognormalDist"
+                },
+                {
+                  "$ref": "#/$defs/GammaDist"
+                },
+                {
+                  "$ref": "#/$defs/WeibullDist"
+                },
+                {
+                  "$ref": "#/$defs/NormalDist"
+                },
+                {
+                  "$ref": "#/$defs/UniformDist"
+                },
+                {
+                  "$ref": "#/$defs/TriangularDist"
+                },
+                {
+                  "$ref": "#/$defs/EmpiricalDist"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quantity"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 0.0,
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "Start"
+        },
+        "stop": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop"
+        },
+        "stream": {
+          "default": "demand",
+          "description": "Named RNG stream for this source.",
+          "title": "Stream",
+          "type": "string"
+        },
+        "task_type": {
+          "default": "task",
+          "title": "Task Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "interarrival"
+      ],
+      "title": "StochasticDemand",
+      "type": "object"
+    },
+    "TaskSpec": {
+      "additionalProperties": false,
+      "description": "A hand-authored work item (FR-DSP-01).",
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "destination": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination"
+        },
+        "due_time": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Due Time"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "quantity": {
+          "default": 1.0,
+          "minimum": 0,
+          "title": "Quantity",
+          "type": "number"
+        },
+        "release_time": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 0.0,
+          "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+          "title": "Release Time"
+        },
+        "type": {
+          "default": "task",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "TaskSpec",
+      "type": "object"
+    },
+    "TriangularDist": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "kind": {
+          "const": "triangular",
+          "default": "triangular",
+          "title": "Kind",
+          "type": "string"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "mode": {
+          "title": "Mode",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "low",
+        "mode",
+        "high"
+      ],
+      "title": "TriangularDist",
+      "type": "object"
+    },
+    "TriggerSpec": {
+      "additionalProperties": false,
+      "description": "Condition trigger (FR-SCN-04): fires the first time ``signal op threshold`` holds.",
+      "properties": {
+        "op": {
+          "enum": [
+            ">",
+            ">=",
+            "<",
+            "<=",
+            "=="
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "signal": {
+          "enum": [
+            "queue_length",
+            "completed_tasks",
+            "released_tasks"
+          ],
+          "title": "Signal",
+          "type": "string"
+        },
+        "threshold": {
+          "title": "Threshold",
+          "type": "number"
+        }
+      },
+      "required": [
+        "signal",
+        "op",
+        "threshold"
+      ],
+      "title": "TriggerSpec",
+      "type": "object"
+    },
+    "UniformDist": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "kind": {
+          "const": "uniform",
+          "default": "uniform",
+          "title": "Kind",
+          "type": "string"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "UniformDist",
+      "type": "object"
+    },
+    "WeibullDist": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "weibull",
+          "default": "weibull",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scale": {
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "shape": {
+          "exclusiveMinimum": 0,
+          "title": "Shape",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit of location/scale parameters; converted to SI at load, then cleared.",
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "shape",
+        "scale"
+      ],
+      "title": "WeibullDist",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:scenario:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One fully specified scenario. ``extends`` is resolved by the loader.",
+  "properties": {
+    "beats": {
+      "items": {
+        "$ref": "#/$defs/BeatSpec"
+      },
+      "title": "Beats",
+      "type": "array"
+    },
+    "behaviors": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Path to behaviors.yaml.",
+      "title": "Behaviors"
+    },
+    "demand": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "list": "#/$defs/ListDemand",
+            "replay": "#/$defs/ReplayDemand",
+            "stochastic": "#/$defs/StochasticDemand"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/StochasticDemand"
+          },
+          {
+            "$ref": "#/$defs/ReplayDemand"
+          },
+          {
+            "$ref": "#/$defs/ListDemand"
+          }
+        ]
+      },
+      "title": "Demand",
+      "type": "array"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "disruptions": {
+      "items": {
+        "$ref": "#/$defs/DisruptionSpec"
+      },
+      "title": "Disruptions",
+      "type": "array"
+    },
+    "domain": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Domain",
+      "type": "string"
+    },
+    "domain_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Domain Version"
+    },
+    "duration": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+          "type": "string"
+        }
+      ],
+      "description": "Run length (seconds or '8 h').",
+      "title": "Duration"
+    },
+    "extends": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Parent scenario (path), resolved at load.",
+      "title": "Extends"
+    },
+    "facility": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Path to facility.yaml.",
+      "title": "Facility"
+    },
+    "fleet": {
+      "items": {
+        "$ref": "#/$defs/FleetEntry"
+      },
+      "title": "Fleet",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "params": {
+      "additionalProperties": true,
+      "description": "Domain parameters (validated by the domain plug-in).",
+      "title": "Params",
+      "type": "object"
+    },
+    "policy": {
+      "$ref": "#/$defs/PolicyRef"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seed": {
+      "default": 0,
+      "description": "Master seed when run standalone.",
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "warmup": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+          "type": "string"
+        }
+      ],
+      "default": 0.0,
+      "description": "time quantity: SI number or string with unit, e.g. '30 min'",
+      "title": "Warmup"
+    }
+  },
+  "required": [
+    "id",
+    "domain",
+    "duration"
+  ],
+  "title": "ScenarioSpec",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

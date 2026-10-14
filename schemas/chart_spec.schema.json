@@ -1,0 +1,490 @@
+{
+  "$defs": {
+    "Comparison": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "default": "baseline",
+          "title": "Baseline",
+          "type": "string"
+        },
+        "kind": {
+          "default": "paired_vs_baseline",
+          "enum": [
+            "paired_vs_baseline",
+            "independent_vs_baseline"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "Comparison",
+      "type": "object"
+    },
+    "Encoding": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "column": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "row": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tooltip": {
+          "items": {
+            "$ref": "#/$defs/FieldRef"
+          },
+          "title": "Tooltip",
+          "type": "array"
+        },
+        "x": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "y": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Encoding",
+      "type": "object"
+    },
+    "FieldRef": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "description": "Metric or dimension id from the query (or '<metric>.ci_low').",
+          "title": "Field",
+          "type": "string"
+        },
+        "scale": {
+          "anyOf": [
+            {
+              "enum": [
+                "linear",
+                "log"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scale"
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "enum": [
+                "ascending",
+                "descending"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sort"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "title": "FieldRef",
+      "type": "object"
+    },
+    "FilterSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "in",
+            "not_in",
+            "gte",
+            "lte",
+            "between"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "dimension",
+        "op",
+        "value"
+      ],
+      "title": "FilterSpec",
+      "type": "object"
+    },
+    "QueryScope": {
+      "additionalProperties": false,
+      "properties": {
+        "experiment_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Id"
+        },
+        "run_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Run Ids",
+          "type": "array"
+        },
+        "scenarios": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Scenarios",
+          "type": "array"
+        },
+        "variants": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Variants",
+          "type": "array"
+        }
+      },
+      "title": "QueryScope",
+      "type": "object"
+    },
+    "QuerySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregate_replications": {
+          "default": true,
+          "title": "Aggregate Replications",
+          "type": "boolean"
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Comparison"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confidence": {
+          "default": 0.95,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "dimensions": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+            "type": "string"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "filters": {
+          "items": {
+            "$ref": "#/$defs/FilterSpec"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "limit": {
+          "default": 1000,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "metrics": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Metrics",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/QueryScope"
+        },
+        "sort": {
+          "items": {
+            "$ref": "#/$defs/SortSpec"
+          },
+          "title": "Sort",
+          "type": "array"
+        },
+        "time_bucket": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*[A-Za-z/0-9]*\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "time quantity: SI number or string with unit, e.g. '30 min'"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Bucket"
+        }
+      },
+      "required": [
+        "metrics"
+      ],
+      "title": "QuerySpec",
+      "type": "object"
+    },
+    "SortSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "descending": {
+          "default": false,
+          "title": "Descending",
+          "type": "boolean"
+        },
+        "field": {
+          "title": "Field",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "title": "SortSpec",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:chart_spec:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "encoding": {
+      "$ref": "#/$defs/Encoding"
+    },
+    "id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "query": {
+      "$ref": "#/$defs/QuerySpec"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "show_uncertainty": {
+      "default": true,
+      "description": "Replicated metrics show CIs unless the user asks otherwise.",
+      "title": "Show Uncertainty",
+      "type": "boolean"
+    },
+    "template": {
+      "enum": [
+        "bar_ci",
+        "point_ci",
+        "timeseries_band",
+        "box",
+        "violin",
+        "histogram",
+        "ecdf",
+        "heatmap",
+        "stacked_breakdown",
+        "waterfall",
+        "tornado",
+        "pareto",
+        "gantt",
+        "comparison_table",
+        "floorplan_overlay"
+      ],
+      "title": "Template",
+      "type": "string"
+    },
+    "title": {
+      "default": "",
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "template",
+    "query"
+  ],
+  "title": "ChartSpec",
+  "type": "object",
+  "x-schema-version": "1.0"
+}

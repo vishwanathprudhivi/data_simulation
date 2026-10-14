@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "LeverDef": {
+      "additionalProperties": false,
+      "properties": {
+        "choices": {
+          "items": {},
+          "title": "Choices",
+          "type": "array"
+        },
+        "default": {
+          "default": null,
+          "title": "Default"
+        },
+        "depends_on": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "path": {
+          "description": "Scenario path the lever sets, e.g. 'fleet.server.count'.",
+          "title": "Path",
+          "type": "string"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "type": {
+          "enum": [
+            "int",
+            "float",
+            "bool",
+            "enum",
+            "duration",
+            "distribution"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "path",
+        "type"
+      ],
+      "title": "LeverDef",
+      "type": "object"
+    }
+  },
+  "$id": "urn:simcore:schema:lever_catalog:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.\\-]*$",
+      "title": "Domain",
+      "type": "string"
+    },
+    "domain_version": {
+      "title": "Domain Version",
+      "type": "string"
+    },
+    "levers": {
+      "items": {
+        "$ref": "#/$defs/LeverDef"
+      },
+      "title": "Levers",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "domain_version",
+    "levers"
+  ],
+  "title": "LeverCatalog",
+  "type": "object",
+  "x-schema-version": "1.0"
+}
