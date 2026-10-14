@@ -21,6 +21,8 @@ from simcore.specs.findings import (
     Estimate,
     FidelitySummary,
     Findings,
+    GoalResult,
+    GoalStep,
 )
 
 __all__ = ["Narrative", "narrate", "synthesize_findings"]
@@ -147,7 +149,36 @@ def synthesize_findings(
         screen=mode,
         **{k: v for k, v in fidelity.items() if k in ("promoted", "promoted_mode") and v},
     )
+    goal = None
+    g = summary.get("goal")
+    if g:
+        steps = [
+            GoalStep(
+                variant=r["variant"],
+                value=float(r["value"]),
+                estimate=_est(r),
+                meets=bool(r["meets"]),
+                ref_id=ref_for(exp_id, r["variant"], g["metric"], "goal"),
+            )
+            for r in g["trace"]
+        ]
+        goal = GoalResult(
+            lever=g["lever"],
+            metric=g["metric"],
+            target=float(g["target"]),
+            sense=g["sense"],
+            minimize_lever=bool(g["minimize_lever"]),
+            status=g["status"],
+            best_variant=g.get("best_variant"),
+            best_value=float(g["best_value"]) if g.get("best_value") is not None else None,
+            trace=steps,
+        )
+        caveats.append(
+            "goal search evaluated only the listed values and assumes the metric changes "
+            "monotonically between them"
+        )
     return Findings(
+        goal=goal,
         experiment_id=exp_id,
         baseline=reference,
         fidelity=fid,
@@ -222,6 +253,26 @@ def narrate(findings: Findings, catalog: Mapping[str, MetricDef]) -> Narrative:
         )
         label = f" [{c.fidelity}]" if findings.fidelity.promoted else ""
         lines.append(f"- {c.variant}{label} {verdict}.{extra}")
+    if findings.goal is not None:
+        g = findings.goal
+        m = catalog.get(g.metric) or next(
+            (x for x in catalog.values() if x.formula == g.metric), None
+        )
+        name = m.display_name if m else g.metric
+        extreme = "smallest" if g.minimize_lever else "largest"
+        if g.best_variant is not None and g.best_value is not None:
+            step = next(s for s in g.trace if s.variant == g.best_variant)
+            val = put(step.ref_id, "value", g.best_value, None)
+            tgt = put(step.ref_id, "target", g.target, m)
+            lines.append(
+                f"Goal: the {extreme} evaluated {g.lever} whose whole {conf}% CI of {name} is "
+                f"{g.sense} {tgt} is {val}."
+            )
+        else:
+            tgt = put(findings.goal.trace[0].ref_id if g.trace else "goal", "target", g.target, m)
+            lines.append(
+                f"Goal: no evaluated {g.lever} kept the whole {conf}% CI of {name} {g.sense} {tgt}."
+            )
     if findings.drivers:
         names = ", ".join(
             (catalog[d.metric].display_name if d.metric in catalog else d.metric)

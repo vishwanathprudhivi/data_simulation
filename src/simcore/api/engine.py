@@ -67,9 +67,10 @@ def run_scenario(
     jsonl: bool = False,
     step: float | None = None,
     queue: str | None = None,
+    reasoning: Any = None,
 ) -> RunResult:
     """Run one replication; write outputs under ``out`` when given (AC-ENG-01)."""
-    engine = default_engine(mode, plugins, queue=queue)
+    engine = default_engine(mode, plugins, queue=queue, reasoning=reasoning)
     try:
         engine.load_config(scenario, overrides).build_world()
         result = engine.run_replication(seed, replication, step=step)

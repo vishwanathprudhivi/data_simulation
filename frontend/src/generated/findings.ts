@@ -32,6 +32,22 @@ export type ExperimentId = string;
 export type Promoted = string[];
 export type PromotedMode = ("logical" | "kinematic" | "physics") | null;
 export type Screen = "logical" | "kinematic" | "physics";
+export type BestValue = number | null;
+export type BestVariant = string | null;
+export type Lever = string;
+export type Metric2 = string;
+export type MinimizeLever = boolean;
+export type Sense = string;
+/**
+ * found | not_met
+ */
+export type Status = string;
+export type Target = number;
+export type Meets = boolean;
+export type RefId2 = string;
+export type Value = number;
+export type Variant1 = string;
+export type Trace = GoalStep[];
 export type NReplications = number;
 export type SchemaVersion = "1.0";
 export type Warnings = string[];
@@ -44,6 +60,7 @@ export interface Findings {
   drivers?: Drivers;
   experiment_id: ExperimentId;
   fidelity?: FidelitySummary;
+  goal?: GoalResult | null;
   n_replications: NReplications;
   schema_version?: SchemaVersion;
   warnings?: Warnings;
@@ -74,4 +91,25 @@ export interface FidelitySummary {
   promoted?: Promoted;
   promoted_mode?: PromotedMode;
   screen?: Screen;
+}
+/**
+ * Outcome of a goal-seeking sweep (FR-SCG-05).
+ */
+export interface GoalResult {
+  best_value?: BestValue;
+  best_variant?: BestVariant;
+  lever: Lever;
+  metric: Metric2;
+  minimize_lever: MinimizeLever;
+  sense: Sense;
+  status: Status;
+  target: Target;
+  trace?: Trace;
+}
+export interface GoalStep {
+  estimate?: Estimate | null;
+  meets: Meets;
+  ref_id: RefId2;
+  value: Value;
+  variant: Variant1;
 }

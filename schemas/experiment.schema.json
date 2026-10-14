@@ -124,6 +124,52 @@
       "title": "FidelityPlan",
       "type": "object"
     },
+    "GoalSeekSpec": {
+      "additionalProperties": false,
+      "description": "Goal attached to a sweep (FR-SCG-05): which variant meets the target, with a trace.",
+      "properties": {
+        "lever": {
+          "title": "Lever",
+          "type": "string"
+        },
+        "metric": {
+          "description": "KPI key compared with the target.",
+          "title": "Metric",
+          "type": "string"
+        },
+        "minimize_lever": {
+          "default": true,
+          "title": "Minimize Lever",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Scenario path the variants set.",
+          "title": "Path",
+          "type": "string"
+        },
+        "sense": {
+          "default": ">=",
+          "enum": [
+            ">=",
+            "<="
+          ],
+          "title": "Sense",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lever",
+        "path",
+        "metric",
+        "target"
+      ],
+      "title": "GoalSeekSpec",
+      "type": "object"
+    },
     "VariantSpec": {
       "additionalProperties": false,
       "description": "A named alternative: overrides applied to the base scenario.\n\nOverride keys are scenario paths, e.g. ``fleet.server.count`` (list items are\nselected by their ``agent_type``/``id``) or ``params.arrival_rate``.",
@@ -215,6 +261,17 @@
     },
     "fidelity": {
       "$ref": "#/$defs/FidelityPlan"
+    },
+    "goal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GoalSeekSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "id": {
       "maxLength": 128,

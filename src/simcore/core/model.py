@@ -75,6 +75,7 @@ class SimContext:
     backend: WorldBackend
     params: BaseModel | None = None
     nav: NavGraph | None = None
+    reasoning: Any = None  # ReasoningClient for policies that use one (default: disabled)
 
     @property
     def now(self) -> float:
@@ -203,6 +204,8 @@ class DispatchingModel(SimModel):
 
     def setup(self, ctx: SimContext) -> None:
         self.ctx = ctx
+        if getattr(self.policy, "uses_reasoning", False):
+            self.policy.bind_reasoning(ctx.reasoning)  # type: ignore[attr-defined]
         bus = ctx.bus
         bus.register(ARRIVAL, Arrival)
         bus.register("dispatch", None)

@@ -207,10 +207,13 @@ BUILTIN_POLICIES: dict[str, PolicyFactory] = {
 
 
 def _register_plan_policies() -> None:
+    from simcore.core.policy.learned import LearnedPolicy, LlmDispatchPolicy
     from simcore.core.policy.plan import PlanFollowerPolicy, SolverCallbackPolicy
 
     BUILTIN_POLICIES[PlanFollowerPolicy.name] = PlanFollowerPolicy
     BUILTIN_POLICIES[SolverCallbackPolicy.name] = SolverCallbackPolicy
+    BUILTIN_POLICIES[LearnedPolicy.name] = LearnedPolicy
+    BUILTIN_POLICIES[LlmDispatchPolicy.name] = LlmDispatchPolicy
 
 
 def make_policy(

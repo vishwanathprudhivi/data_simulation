@@ -183,3 +183,26 @@ def test_AC_IFC_02_live_session_api(env: Any) -> None:
     assert '"hud"' in first
     assert c.delete(base).json() == {"closed": sid}
     assert c.get(base).status_code == 404
+
+
+def test_pptx_export_and_domain_draft_endpoints(env: Any) -> None:
+    c, job = env
+    r = c.get(f"/api/v1/jobs/{job}/report", params={"format": "pptx"})
+    if r.status_code == 501:
+        pytest.skip("python-pptx is not installed (pip install '.[report]')")
+    assert r.status_code == 200, r.text
+    assert r.content[:2] == b"PK" and "presentationml" in r.headers["content-type"]
+    import io
+
+    from pptx import Presentation
+
+    deck = Presentation(io.BytesIO(r.content))
+    texts = [sh.text_frame.text for s in deck.slides for sh in s.shapes if sh.has_text_frame]
+    assert any("replications" in t and "confidence" in t for t in texts)  # trust indicators
+    sop = (EXAMPLES / "onboarding" / "packaging_line" / "sop.md").read_text()
+    d = c.post("/api/v1/domains/draft", json={"name": "Line 3", "text": sop}).json()
+    assert d["published"] is False and d["definition"]["id"] == "line_3"
+    assert len(d["definition"]["process"]["stations"]) == 5 and d["questions"]
+    assert (
+        c.post("/api/v1/domains/draft", json={"name": "x", "text": "no steps"}).status_code == 422
+    )

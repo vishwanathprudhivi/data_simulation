@@ -11,7 +11,15 @@ from pydantic import Field
 from simcore.specs.common import Identifier, SchemaVersion, SpecModel
 from simcore.specs.experiment import FidelityMode
 
-__all__ = ["Comparison", "Driver", "Estimate", "FidelitySummary", "Findings"]
+__all__ = [
+    "Comparison",
+    "Driver",
+    "Estimate",
+    "FidelitySummary",
+    "Findings",
+    "GoalResult",
+    "GoalStep",
+]
 
 
 class Estimate(SpecModel):
@@ -45,6 +53,28 @@ class Driver(SpecModel):
     ref_id: str
 
 
+class GoalStep(SpecModel):
+    variant: str
+    value: float
+    estimate: Estimate | None = None
+    meets: bool
+    ref_id: str
+
+
+class GoalResult(SpecModel):
+    """Outcome of a goal-seeking sweep (FR-SCG-05)."""
+
+    lever: str
+    metric: str
+    target: float
+    sense: str
+    minimize_lever: bool
+    status: str = Field(description="found | not_met")
+    best_variant: str | None = None
+    best_value: float | None = None
+    trace: list[GoalStep] = Field(default_factory=list)
+
+
 class Findings(SpecModel):
     schema_version: SchemaVersion = "1.0"
     experiment_id: Identifier
@@ -56,3 +86,4 @@ class Findings(SpecModel):
     drivers: list[Driver] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    goal: GoalResult | None = None

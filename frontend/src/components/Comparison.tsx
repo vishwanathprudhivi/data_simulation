@@ -36,6 +36,9 @@ export function Comparison() {
         <a href={`${API}/jobs/${s.jobId}/report?format=md`} download={`${s.jobId}_report.md`}>
           Report (Markdown)
         </a>
+        <a href={`${API}/jobs/${s.jobId}/report?format=pptx`} download={`${s.jobId}.pptx`}>
+          Slides (PPTX)
+        </a>
         {s.scenarioRef && <ScenarioYamlLink />}
       </div>
     </div>

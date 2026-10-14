@@ -204,6 +204,12 @@ class ApplyAttachmentRequest(BaseModel):
     lever: str | None = Field(default=None, description="samples: distribution lever to set.")
 
 
+class DraftDomainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=200)
+    text: str = Field(min_length=1, max_length=100_000)
+
+
 class CompileRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=4000)
@@ -356,6 +362,30 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
     @app.get(f"{API}/domains/{{domain}}/dimensions")
     def dimensions(domain: str, who: Caller = Depends(caller)) -> dict[str, Any]:
         return dimension_catalog(plugins.get(domain)).model_dump(mode="json")
+
+    @app.post(f"{API}/domains/draft")
+    def draft_domain_(body: DraftDomainRequest, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Draft a Tier-0 domain from a process description (FR-DOM-09). Never published."""
+        from simcore.onboarding.draft import draft_domain
+
+        try:
+            result = draft_domain(body.text, body.name, reasoning)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        store.audit(
+            "domain.draft",
+            user=who.user,
+            workspace=who.workspace,
+            target=result.definition.id,
+            outcome=result.source,
+        )
+        return {
+            "definition": result.definition.model_dump(mode="json", exclude_none=True),
+            "yaml": result.yaml(),
+            "questions": result.questions,
+            "source": result.source,
+            "published": False,
+        }
 
     @app.get(f"{API}/gaps")
     def gaps(domain: str | None = None, who: Caller = Depends(caller)) -> list[dict[str, Any]]:
@@ -600,10 +630,23 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
     @app.get(f"{API}/jobs/{{job_id}}/report")
     def report(
         job_id: str,
-        format: str = Query("html", pattern="^(html|md)$"),
+        format: str = Query("html", pattern="^(html|md|pptx)$"),
         who: Caller = Depends(caller),
     ) -> Response:
         job = own_job(job_id, who)
+        if format == "pptx":  # stretch export (FR-UI-09), needs python-pptx
+            try:
+                from services.platform.pptx_export import findings_pptx
+
+                result, story, catalog = findings_for(job)
+                deck = findings_pptx(result, story.text, catalog, f"Experiment {job_id}")
+            except ImportError as exc:
+                raise HTTPException(501, f"PPTX export needs python-pptx: {exc}") from exc
+            return Response(
+                deck,
+                media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                headers={"Content-Disposition": f'attachment; filename="{job_id}.pptx"'},
+            )
         body = artifacts.get_bytes(result_key(job, f"report.{format}"))
         return Response(body, media_type="text/html" if format == "html" else "text/markdown")
 
@@ -874,27 +917,28 @@ def create_app(settings: Settings | None = None, plugins: PluginRegistry | None 
             }
         return out
 
-    @app.get(f"{API}/jobs/{{job_id}}/findings")
-    def findings(job_id: str, who: Caller = Depends(caller)) -> dict[str, Any]:
-        """Deterministic ``Findings`` and the guarded narrative (FR-SCG-11, FR-CHAT-04)."""
+    def findings_for(job: dict[str, Any]) -> tuple[Any, Any, dict[str, Any]]:
         from simcore.catalog import metric_catalog
         from simcore.compiler import extrapolated_variants
         from simcore.experiment.findings import narrate, synthesize_findings
 
-        job = own_job(job_id, who)
         data = json.loads(artifacts.get_bytes(result_key(job, "summary.json")))
-        _, bundle, _ = JobService.load(job)
+        spec, bundle, _ = JobService.load(job)
         plugin = plugins.get(bundle.scenario.domain)
         catalog = {m.id: m for m in metric_catalog(plugin).metrics}
         flags = extrapolated_variants(data, bundle, plugin)
-        spec, _, _ = JobService.load(job)
         definition = plugin.domain_definition()
         own = [m.id for m in definition.metrics] if definition else []
         headline = list(spec.kpis) or [
             m for m in data["metrics"] if m in own and catalog[m].direction != "neutral"
         ]
         result = synthesize_findings(data, catalog, extrapolated=flags, headline=headline or None)
-        story = narrate(result, catalog)
+        return result, narrate(result, catalog), catalog
+
+    @app.get(f"{API}/jobs/{{job_id}}/findings")
+    def findings(job_id: str, who: Caller = Depends(caller)) -> dict[str, Any]:
+        """Deterministic ``Findings`` and the guarded narrative (FR-SCG-11, FR-CHAT-04)."""
+        result, story, _ = findings_for(own_job(job_id, who))
         return {
             "findings": result.model_dump(mode="json"),
             "narrative": {"text": story.text, "template": story.template, "refs": story.refs},

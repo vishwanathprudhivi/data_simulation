@@ -17,7 +17,7 @@ COPY domains ./domains
 COPY services ./services
 COPY schemas ./schemas
 COPY examples ./examples
-RUN pip install --no-cache-dir ".[redis,service]"
+RUN pip install --no-cache-dir ".[redis,service,report]"
 COPY --from=frontend /build/frontend/dist ./frontend
 EXPOSE 8000
 CMD ["python", "-m", "services.api"]

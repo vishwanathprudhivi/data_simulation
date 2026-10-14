@@ -332,6 +332,37 @@ def publish(
     click.echo(f"published {defn.id} {defn.version} to {target} (report: {report['rating']})")
 
 
+@domain.command("draft")
+@click.argument("name")
+@click.option(
+    "--from",
+    "source",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Process description (SOP, interview notes) as text/markdown.",
+)
+@click.option("--dir", "parent", type=click.Path(path_type=Path), default=Path("."))
+def draft(name: str, source: Path, parent: Path) -> None:
+    """Draft domain.yaml + QUESTIONS.md from a process description (FR-DOM-09)."""
+    from simcore.onboarding.draft import draft_domain
+
+    try:
+        result = draft_domain(source.read_text(encoding="utf-8"), name)
+    except ValueError as exc:
+        _fail(str(exc))
+    root = parent / result.definition.id
+    if (root / "domain.yaml").exists():
+        _fail(f"{root / 'domain.yaml'} exists; draft into another --dir")
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "domain.yaml").write_text(result.yaml())
+    (root / "QUESTIONS.md").write_text(result.questions_md())
+    click.echo(
+        f"drafted {len(result.definition.process.stations if result.definition.process else [])}"
+        f" stations into {root}/domain.yaml with {len(result.questions)} open questions "
+        "(QUESTIONS.md); review before `simcore domain validate`"
+    )
+
+
 @domain.command("ingest-facility")
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--id", "facility_id", required=True)

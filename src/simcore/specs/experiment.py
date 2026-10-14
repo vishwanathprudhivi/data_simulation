@@ -14,6 +14,7 @@ __all__ = [
     "FactorSpec",
     "FidelityMode",
     "FidelityPlan",
+    "GoalSeekSpec",
     "VariantSpec",
 ]
 
@@ -50,6 +51,17 @@ class FidelityPlan(SpecModel):
     )
 
 
+class GoalSeekSpec(SpecModel):
+    """Goal attached to a sweep (FR-SCG-05): which variant meets the target, with a trace."""
+
+    lever: str
+    path: str = Field(description="Scenario path the variants set.")
+    metric: str = Field(description="KPI key compared with the target.")
+    target: float
+    sense: Literal[">=", "<="] = ">="
+    minimize_lever: bool = True
+
+
 class AdaptiveSpec(SpecModel):
     """Sequential replication (FR-EXP-07)."""
 
@@ -78,6 +90,7 @@ class ExperimentSpec(SpecModel):
     kpis: list[str] = Field(default_factory=list, description="Empty = all registered KPIs.")
     fidelity: FidelityPlan = Field(default_factory=FidelityPlan)
     adaptive: AdaptiveSpec | None = None
+    goal: GoalSeekSpec | None = None
     parallelism: int = Field(default=1, ge=1)
     timeout_s: float | None = Field(default=None, gt=0, description="Per-replication timeout.")
 

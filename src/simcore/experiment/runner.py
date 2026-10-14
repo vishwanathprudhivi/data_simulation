@@ -294,6 +294,36 @@ class ExperimentResult:
             "warnings": self.warnings,
             "provenance": self.provenance(),
             "fidelity": self.fidelity_dict(),
+            "goal": self.goal_dict(),
+        }
+
+    def goal_dict(self) -> dict[str, Any] | None:
+        """Which evaluated value meets the goal for its whole CI (FR-SCG-05)."""
+        g = self.spec.goal
+        if g is None:
+            return None
+        trace = []
+        for v in self.variants:
+            if v.id == self.reference or g.path not in v.overrides:
+                continue
+            try:
+                ci = self.summary(v.id, g.metric)
+            except KeyError:
+                continue
+            meets = (ci.low >= g.target) if g.sense == ">=" else (ci.high <= g.target)
+            if math.isnan(ci.low) or math.isnan(ci.high):
+                meets = False
+            trace.append({"variant": v.id, "value": v.overrides[g.path], **_ci_dict(ci),
+                          "meets": bool(meets)})  # fmt: skip
+        trace.sort(key=lambda r: r["value"])
+        ok = [r for r in trace if r["meets"]]
+        best = (ok[0] if g.minimize_lever else ok[-1]) if ok else None
+        return {
+            **g.model_dump(mode="json"),
+            "status": "found" if best else "not_met",
+            "best_variant": best["variant"] if best else None,
+            "best_value": best["value"] if best else None,
+            "trace": trace,
         }
 
     def fidelity_dict(self) -> dict[str, Any]:

@@ -26,7 +26,7 @@ onboarding kit.
 | M11 Web frontend (React + TS, Playwright e2e) | done |
 | M12 Domain onboarding kit (mapping, fitting, backtest, CLI) | done |
 | M13 Interactive/demo mode (beats, live injection, KPI HUD) | done; 3D streaming pending |
-| M4 – M14 | in progress |
+| M14 Stretch (goal-seek runs, learned/LLM policies, SOP draft, PPTX) | done; physics mode pending |
 
 ## Quick start
 

@@ -27,7 +27,7 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -e ".[dev,redis,service]"
+          .venv/bin/pip install -e ".[dev,redis,service,report]"
       - name: Lint (ruff, mypy, import-linter)
         run: make lint
       - name: Test (no GPU, no Redis)

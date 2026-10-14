@@ -175,6 +175,118 @@
       },
       "title": "FidelitySummary",
       "type": "object"
+    },
+    "GoalResult": {
+      "additionalProperties": false,
+      "description": "Outcome of a goal-seeking sweep (FR-SCG-05).",
+      "properties": {
+        "best_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Best Value"
+        },
+        "best_variant": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Best Variant"
+        },
+        "lever": {
+          "title": "Lever",
+          "type": "string"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "minimize_lever": {
+          "title": "Minimize Lever",
+          "type": "boolean"
+        },
+        "sense": {
+          "title": "Sense",
+          "type": "string"
+        },
+        "status": {
+          "description": "found | not_met",
+          "title": "Status",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "number"
+        },
+        "trace": {
+          "items": {
+            "$ref": "#/$defs/GoalStep"
+          },
+          "title": "Trace",
+          "type": "array"
+        }
+      },
+      "required": [
+        "lever",
+        "metric",
+        "target",
+        "sense",
+        "minimize_lever",
+        "status"
+      ],
+      "title": "GoalResult",
+      "type": "object"
+    },
+    "GoalStep": {
+      "additionalProperties": false,
+      "properties": {
+        "estimate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Estimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "meets": {
+          "title": "Meets",
+          "type": "boolean"
+        },
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "variant": {
+          "title": "Variant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variant",
+        "value",
+        "meets",
+        "ref_id"
+      ],
+      "title": "GoalStep",
+      "type": "object"
     }
   },
   "$id": "urn:simcore:schema:findings:1.0",
@@ -221,6 +333,17 @@
     },
     "fidelity": {
       "$ref": "#/$defs/FidelitySummary"
+    },
+    "goal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GoalResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "n_replications": {
       "minimum": 1,

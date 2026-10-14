@@ -177,6 +177,7 @@ class Engine:
             backend=self.backend,
             params=self.params,
             nav=NavGraph(self.bundle.facility) if self.bundle.facility is not None else None,
+            reasoning=self.reasoning,
         )
         self.ctx.emit(
             EventType.SIM_START,

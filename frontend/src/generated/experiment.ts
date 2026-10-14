@@ -34,6 +34,18 @@ export type PromotedMode = "logical" | "kinematic" | "physics";
 export type RankDirection = "higher_is_better" | "lower_is_better";
 export type RankMetric = string | null;
 export type Screen = "logical" | "kinematic" | "physics";
+export type Lever = string;
+/**
+ * KPI key compared with the target.
+ */
+export type Metric1 = string;
+export type MinimizeLever = boolean;
+/**
+ * Scenario path the variants set.
+ */
+export type Path1 = string;
+export type Sense = ">=" | "<=";
+export type Target = number;
 export type Id = string;
 export type IncludeBaseline = boolean;
 /**
@@ -71,6 +83,7 @@ export interface Experiment {
   design?: Design;
   factors?: Factors;
   fidelity?: FidelityPlan;
+  goal?: GoalSeekSpec | null;
   id: Id;
   include_baseline?: IncludeBaseline;
   kpis?: Kpis;
@@ -105,6 +118,17 @@ export interface FidelityPlan {
   rank_direction?: RankDirection;
   rank_metric?: RankMetric;
   screen?: Screen;
+}
+/**
+ * Goal attached to a sweep (FR-SCG-05): which variant meets the target, with a trace.
+ */
+export interface GoalSeekSpec {
+  lever: Lever;
+  metric: Metric1;
+  minimize_lever?: MinimizeLever;
+  path: Path1;
+  sense?: Sense;
+  target: Target;
 }
 /**
  * A named alternative: overrides applied to the base scenario.

@@ -24,7 +24,7 @@ from simcore.core.hashing import content_hash
 from simcore.core.plugins import DomainPlugin
 from simcore.specs.domain import LeverDef
 from simcore.specs.edit import LeverChange, ScenarioEdit, UnsupportedRequest
-from simcore.specs.experiment import ExperimentSpec, VariantSpec
+from simcore.specs.experiment import ExperimentSpec, GoalSeekSpec, VariantSpec
 
 __all__ = ["CompiledScenario", "DiffLine", "compile_edit", "extrapolated_variants"]
 
@@ -217,6 +217,14 @@ def compile_edit(
                 else:
                     cands = list(range(int(lever.min), int(lever.max) + 1))
             goal = {**g.model_dump(mode="json"), "candidates": sorted(cands)}
+            if cands and not named:  # run it as a bounded sweep (FR-SCG-05)
+                reps_goal = replications or edit.replications or DEFAULT_REPLICATIONS
+                k = max(2, min(len(cands), g.max_runs // reps_goal - 1, MAX_COMPILED_VARIANTS))
+                ordered = sorted(cands)
+                picks = sorted({ordered[round(i * (len(ordered) - 1) / (k - 1))] for i in range(k)})
+                goal["evaluated"] = picks
+                for v in picks:
+                    named.append((f"{lever.id}-{v}", f"{lever.display_name} = {v}", {lever.id: v}))
     for i, m in enumerate(edit.metrics):
         if m not in metrics:
             issues.append(
@@ -297,6 +305,18 @@ def compile_edit(
             master_seed=master_seed,
             crn=True,
             kpis=list(edit.metrics),
+            goal=(
+                GoalSeekSpec(
+                    lever=goal["lever"],
+                    path=levers[goal["lever"]].path,
+                    metric=metrics[goal["metric"]].formula,
+                    target=goal["target"],
+                    sense=goal["sense"],
+                    minimize_lever=goal["minimize_lever"],
+                )
+                if goal is not None and goal.get("evaluated")
+                else None
+            ),
         )
     return CompiledScenario(
         edit=edit,

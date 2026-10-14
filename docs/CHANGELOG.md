@@ -1,5 +1,17 @@
 # Changelog
 
+## M14 – Stretch items (2026-10-14)
+
+Implemented: goal-seeking requests run end to end as bounded CRN sweeps with a goal
+result in `summary.json`, `Findings` and the narrative (FR-SCG-05); `learned` policy
+loader (JSON linear model or callable) and cross-entropy policy search; constrained
+online `llm_dispatch` policy with deterministic fallback and call budget; AI-assisted
+onboarding draft from SOP text (`simcore domain draft`, `POST /domains/draft`,
+FR-DOM-09); PPTX export of findings (`report?format=pptx`, extra `report`).
+Not implemented: `physics` mode (needs Isaac Sim on a GPU host).
+
+Decisions: ADR-018.
+
 ## M13 – Interactive / demo mode (2026-10-14)
 
 **Exit gate:** AC-IFC-02 (interactive mode loads the reference facility, plays a

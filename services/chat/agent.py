@@ -381,6 +381,14 @@ class HeuristicChatClient(HeuristicCompilerClient):
             flag = " [extrapolated: outside the calibrated envelope]" if v["extrapolated"] else ""
             diff = "; ".join(d["text"] for d in v["diff"]) or "no change vs baseline"
             lines.append(f"- {v['id']}: {diff}{flag}")
+        if card.get("goal") and card["goal"].get("evaluated"):
+            g = card["goal"]
+            lines.append(
+                f"Goal: the {'smallest' if g['minimize_lever'] else 'largest'} {g['lever']} "
+                f"with {g['metric']} {g['sense']} {g['target']} for the whole confidence "
+                f"interval, checked at {', '.join(str(v) for v in g['evaluated'])} "
+                f"(capped at {g['max_runs']} replications)."
+            )
         if card["assumptions"]:
             lines.append("Assumptions: " + "; ".join(card["assumptions"]) + ".")
         for m in r.get("messages") or []:
