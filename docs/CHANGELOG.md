@@ -1,5 +1,38 @@
 # Changelog
 
+## M2 – Experiment layer (2026-10-14)
+
+**Exit gate:** AC-EXP-03, AC-EXP-04, AC-IFC-01 (logical) — all passing.
+
+Measured for AC-EXP-03 (baseline vs 4% lower arrival rate, 10 replications;
+independent-seed half-width ÷ CRN paired half-width): wait_time_mean 2.8x,
+throughput 5.8x, utilization 4.6x. With CRN the wait-time difference is detected
+(CI excludes 0); with independent seeds it is not. Gate threshold: > 2x.
+
+Requirements implemented:
+- FR-EXP-02 CRN seed mapping; FR-EXP-03 named variants + full-factorial factors
+  (explicit design; Latin hypercube raises a clear error, stretch);
+  FR-EXP-04 Student-t CIs; FR-EXP-05 paired comparisons with `ci_excludes_zero`
+  (Welch for independent seeds); FR-EXP-06 fixed warm-up plus Welch diagnostic
+  plot and MSER suggestion (`simcore warmup`); FR-EXP-07 adaptive replication;
+  FR-EXP-08 fitting (exponential, lognormal, gamma, Weibull, normal; AIC ranking,
+  KS/AD, Q-Q; `simcore fit`); FR-EXP-09 Parquet results with provenance;
+  FR-EXP-10 warnings for low n, degenerate variance, failures, unknown KPIs.
+- FR-IFC-01 `simcore experiment | fit | report | warmup`; FR-IFC-02 `simcore.api`
+  exports `Engine`, `Experiment`, `Evaluator`; FR-IFC-03 Evaluator with
+  memory/disk cache; FR-IFC-04 process pool with per-replication timeout;
+  FR-IFC-06 Markdown + HTML reports.
+- NFR-08 failed replications are retried/recorded and never abort an experiment.
+
+Decisions: ADR-006. Guide: `docs/guides/experiments.md`.
+
+Deferrals: fidelity promotion (needs M4; warns), Latin hypercube (stretch),
+plan inputs to the Evaluator (M5 plan follower).
+
+Known issues: service times are drawn when a task starts, so CRN synchronisation
+of service draws relies on FIFO start order being the same across alternatives;
+attaching draws to task identity would be stronger (revisit with M3 policies).
+
 ## M1 – Logical core (2026-10-14)
 
 **Exit gate:** AC-ENG-01, AC-ENG-02, AC-ENG-03, AC-ENG-04, AC-EXP-01, AC-EXP-02 — all passing

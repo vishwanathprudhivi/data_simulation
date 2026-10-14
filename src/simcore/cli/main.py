@@ -128,6 +128,175 @@ def run(
 
 
 @cli.command()
+@click.argument("experiment", type=click.Path(path_type=Path))
+@click.option("--out", type=click.Path(path_type=Path), default=Path("runs"))
+@click.option(
+    "--parallel",
+    "parallelism",
+    type=int,
+    default=None,
+    help="Worker processes (default: experiment.parallelism).",
+)
+@click.option("--retries", type=int, default=0, help="Retries per failed replication.")
+@click.option("--plugin", "plugins", multiple=True)
+def experiment(
+    experiment: Path,
+    out: Path,
+    parallelism: int | None,
+    retries: int,
+    plugins: tuple[str, ...],
+) -> None:
+    """Run EXPERIMENT (baseline + variants x replications) and write a report (FR-EXP-*)."""
+
+    def show(ev: Any) -> None:
+        click.echo(
+            f"  [{ev.completed}/{ev.planned}] {ev.variant_id} rep {ev.replication}: {ev.status}",
+            err=True,
+        )
+
+    try:
+        from simcore.core.config import load_experiment
+        from simcore.experiment.runner import ExperimentRunner
+
+        spec, base = load_experiment(experiment)
+        result = ExperimentRunner(
+            spec,
+            base,
+            _plugins(plugins),
+            out_root=out,
+            parallelism=parallelism,
+            retries=retries,
+            progress=show,
+        ).run()
+    except Exception as exc:
+        _fail(exc)
+    click.echo(f"wrote {out / spec.id}")
+    for c in result.comparisons:
+        d = c.diff
+        flag = "excludes 0" if c.ci_excludes_zero else "includes 0"
+        click.echo(
+            f"  {c.variant} vs {c.reference} {c.metric}: {d.mean:+.4g} "
+            f"[{d.low:.4g}, {d.high:.4g}] ({flag})"
+        )
+    for w in result.warnings:
+        click.echo(click.style("warning: ", fg="yellow") + w)
+
+
+@cli.command()
+@click.argument("data", type=click.Path(exists=True, path_type=Path))
+@click.option("--column", default=None, help="CSV column holding the samples.")
+@click.option("--unit", default=None, help="Unit of the samples, e.g. 'min' (converted to SI).")
+@click.option(
+    "--out",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write the best distribution spec as YAML here.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Print the full fit report as JSON.")
+def fit(data: Path, column: str | None, unit: str | None, out: Path | None, as_json: bool) -> None:
+    """Fit candidate distributions to samples and rank them (FR-EXP-08)."""
+    import yaml
+
+    from simcore.experiment.fitting import fit_distributions, read_samples
+
+    try:
+        report = fit_distributions(read_samples(data, column), unit=unit)
+    except Exception as exc:
+        _fail(exc)
+    if as_json:
+        click.echo(json.dumps(report.to_dict(), indent=2))
+    else:
+        click.echo(f"n = {report.n}; ranked by AIC (lower is better)")
+        click.echo(
+            f"  {'distribution':12s} {'AIC':>12s} {'KS':>8s} {'KS p':>8s} {'AD':>8s}  params"
+        )
+        for c in report.candidates:
+            params = ", ".join(f"{k}={v:.4g}" for k, v in c.params.items())
+            click.echo(
+                f"  {c.name:12s} {c.aic:12.1f} {c.ks_stat:8.4f} {c.ks_pvalue:8.3f} "
+                f"{c.ad_stat:8.3f}  {params}"
+            )
+        for name, why in report.skipped.items():
+            click.echo(f"  {name:12s} skipped: {why}")
+    if out is not None:
+        out.write_text(yaml.safe_dump(report.best.spec, sort_keys=False))
+        click.echo(f"wrote {out} ({report.best.name})")
+
+
+@cli.command()
+@click.argument("experiment_dir", type=click.Path(exists=True, path_type=Path))
+def report(experiment_dir: Path) -> None:
+    """Regenerate report.md / report.html from an experiment's summary.json (FR-IFC-06)."""
+    from simcore.experiment.report import write_reports
+
+    summary_path = experiment_dir / "summary.json"
+    if not summary_path.exists():
+        _fail(FileNotFoundError(f"{summary_path} not found; run 'simcore experiment' first"))
+    files = write_reports(json.loads(summary_path.read_text()), experiment_dir)
+    for p in files.values():
+        click.echo(f"wrote {p}")
+
+
+@cli.command()
+@click.argument("scenario", type=click.Path(path_type=Path))
+@click.option("--replications", type=int, default=5)
+@click.option("--seed", type=int, default=0)
+@click.option(
+    "--signal",
+    type=click.Choice(["queue_length", "cycle_time", "wait_time", "throughput"]),
+    default="queue_length",
+)
+@click.option("--bucket", type=float, default=60.0, help="Bucket width in seconds.")
+@click.option("--window", type=int, default=5, help="Welch moving-average half-width.")
+@click.option(
+    "--experiment-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Attach the diagnostic to this experiment's summary and report.",
+)
+@click.option("--plugin", "plugins", multiple=True)
+def warmup(
+    scenario: Path,
+    replications: int,
+    seed: int,
+    signal: str,
+    bucket: float,
+    window: int,
+    experiment_dir: Path | None,
+    plugins: tuple[str, ...],
+) -> None:
+    """Welch's-method warm-up diagnostic for SCENARIO (FR-EXP-06)."""
+    from simcore.experiment.report import write_reports
+    from simcore.experiment.warmup import welch_diagnostic
+
+    try:
+        diag = welch_diagnostic(
+            load_scenario(scenario),
+            _plugins(plugins),
+            replications=replications,
+            master_seed=seed,
+            signal=signal,
+            bucket=bucket,
+            window=window,
+        )
+    except Exception as exc:
+        _fail(exc)
+    click.echo(
+        f"configured warm-up: {diag.configured:g} s; suggested: "
+        f"{'n/a' if diag.suggested is None else f'{diag.suggested:g} s'}"
+    )
+    if experiment_dir is not None:
+        path = experiment_dir / "summary.json"
+        summary = json.loads(path.read_text())
+        summary["warmup"] = diag.to_dict()
+        path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+        write_reports(summary, experiment_dir)
+        click.echo(f"updated {experiment_dir}/report.html")
+    else:
+        click.echo(json.dumps(diag.to_dict()))
+
+
+@cli.command()
 @click.argument("events", type=click.Path(exists=True, path_type=Path))
 @click.option("--at", "times", type=float, multiple=True, help="Sim-times to report state at.")
 def replay(events: Path, times: tuple[float, ...]) -> None:

@@ -32,7 +32,7 @@ from simcore.core.registry import EntityRegistry
 from simcore.core.rng import RNGManager
 from simcore.core.scheduler import EventScheduler
 
-__all__ = ["Engine", "EngineStateError", "RunResult"]
+__all__ = ["Engine", "EngineStateError", "RunResult", "SimulationTimeoutError"]
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +42,10 @@ QueueFactory = Callable[[], TaskQueue]
 
 class EngineStateError(RuntimeError):
     """Lifecycle method called out of order."""
+
+
+class SimulationTimeoutError(SimulationError):
+    """A replication exceeded its wall-clock budget (FR-IFC-04)."""
 
 
 _ORDER = ("created", "loaded", "built", "reset", "ran", "collected", "torn_down")
@@ -90,6 +94,7 @@ class Engine:
         queue_factory: QueueFactory = InMemoryQueue,
         reasoning: ReasoningClient | None = None,
         max_events: int = 50_000_000,
+        timeout_s: float | None = None,
     ) -> None:
         self.plugins = plugins
         self.backend_factory = backend_factory
@@ -97,6 +102,9 @@ class Engine:
         self.queue_factory = queue_factory
         self.reasoning = reasoning or DisabledReasoningClient()
         self.max_events = max_events
+        # Wall-clock budget per run() call. It can only abort a run, never change it.
+        self.timeout_s = timeout_s
+        self._deadline: float | None = None
         self._state = "created"
         self.bundle: ScenarioBundle | None = None
         self.plugin: DomainPlugin | None = None
@@ -187,6 +195,7 @@ class Engine:
         assert self.ctx is not None and self.bundle is not None and self.model is not None
         end = self.bundle.scenario.duration if until is None else float(until)
         start_wall = _walltime.perf_counter()
+        self._deadline = None if self.timeout_s is None else start_wall + self.timeout_s
         try:
             if step is None:
                 self._process_until(end)
@@ -223,6 +232,15 @@ class Engine:
             clock.advance_to(ev.time)
             bus.publish(ev)
             self._events_processed += 1
+            if (
+                self._deadline is not None
+                and self._events_processed % 4096 == 0
+                and _walltime.perf_counter() > self._deadline
+            ):
+                raise SimulationTimeoutError(
+                    f"replication exceeded its {self.timeout_s}s wall-clock budget at "
+                    f"sim-time {clock.now}"
+                )
             if self._events_processed > self.max_events:
                 raise SimulationError(
                     f"event budget exhausted ({self.max_events} events) at t={clock.now}; "

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import stats
 
-__all__ = ["CIEstimate", "LowReplicationWarning", "mean_ci", "paired_ci"]
+__all__ = ["CIEstimate", "LowReplicationWarning", "mean_ci", "paired_ci", "welch_ci"]
 
 #: Below this many replications a CI is flagged as not meaningful (FR-EXP-10).
 MIN_MEANINGFUL_REPLICATIONS = 5
@@ -81,3 +81,35 @@ def paired_ci(a: Sequence[float], b: Sequence[float], confidence: float = 0.95) 
     if len(a) != len(b):
         raise ValueError(f"paired comparison needs equal lengths ({len(a)} vs {len(b)})")
     return mean_ci([y - x for x, y in zip(a, b)], confidence)
+
+
+def welch_ci(a: Sequence[float], b: Sequence[float], confidence: float = 0.95) -> CIEstimate:
+    """CI of ``mean(b) - mean(a)`` for independent samples (Welch-Satterthwaite)."""
+    x = np.asarray([v for v in a if not math.isnan(v)], dtype=float)
+    y = np.asarray([v for v in b if not math.isnan(v)], dtype=float)
+    if len(x) < 2 or len(y) < 2:
+        _warn(["Welch interval needs >= 2 values per group"])
+        diff = float(y.mean() - x.mean()) if len(x) and len(y) else math.nan
+        return CIEstimate(
+            diff,
+            math.inf,
+            -math.inf,
+            math.inf,
+            min(len(x), len(y)),
+            math.nan,
+            confidence,
+            ("insufficient replications",),
+        )
+    vx, vy = x.var(ddof=1) / len(x), y.var(ddof=1) / len(y)
+    se = math.sqrt(vx + vy)
+    diff = float(y.mean() - x.mean())
+    notes: list[str] = []
+    if se == 0.0:
+        notes.append("zero variance in both groups (degenerate)")
+        _warn(notes)
+        return CIEstimate(diff, 0.0, diff, diff, min(len(x), len(y)), 0.0, confidence, tuple(notes))
+    dof = (vx + vy) ** 2 / (vx**2 / (len(x) - 1) + vy**2 / (len(y) - 1))
+    half = float(stats.t.ppf(0.5 + confidence / 2, dof) * se)
+    return CIEstimate(
+        diff, half, diff - half, diff + half, min(len(x), len(y)), se, confidence, tuple(notes)
+    )

@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from simcore.adapters import get_backend
 from simcore.core.config import ScenarioBundle
 from simcore.core.engine import Engine, RunResult
 from simcore.core.plugins import PluginRegistry
 
-__all__ = ["default_engine", "default_plugins", "run_scenario"]
+if TYPE_CHECKING:
+    from simcore.experiment.runner import ExperimentResult
+
+__all__ = ["default_engine", "default_plugins", "run_experiment", "run_scenario"]
 
 
 def default_plugins(extra: Sequence[str] = ()) -> PluginRegistry:
@@ -50,3 +53,27 @@ def run_scenario(
     if out is not None:
         result.write(out, jsonl=jsonl)
     return result
+
+
+def run_experiment(
+    experiment: str | Path,
+    *,
+    out: Path | None = Path("runs"),
+    parallelism: int | None = None,
+    plugins: PluginRegistry | None = None,
+    retries: int = 0,
+) -> ExperimentResult:
+    """Load ``experiment.yaml`` and run it; outputs go to ``out/<experiment id>/``."""
+    from simcore.core.config import load_experiment
+    from simcore.experiment.runner import ExperimentRunner
+
+    spec, base = load_experiment(experiment)
+    runner = ExperimentRunner(
+        spec,
+        base,
+        plugins or default_plugins(),
+        out_root=out,
+        parallelism=parallelism,
+        retries=retries,
+    )
+    return runner.run()

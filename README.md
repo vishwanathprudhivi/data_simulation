@@ -14,7 +14,8 @@ onboarding kit.
 |-----------|-------|
 | M0 Foundations | done |
 | M1 Logical core | done |
-| M2 – M14 | not started |
+| M2 Experiment layer | done |
+| M3 – M14 | not started |
 
 ## Quick start
 
@@ -27,7 +28,15 @@ make lint test                  # ruff, mypy, import-linter; tests (no GPU/Redis
 # -> runs/adhoc/mmc_baseline/rep_000/{events.parquet,kpis.json,meta.json}
 .venv/bin/simcore run examples/scenarios/toy_queue/mmc_baseline.yaml --set fleet.server.count=4
 .venv/bin/simcore domains list
+
+# experiments: baseline + variants x replications with CRN, CIs and a report
+.venv/bin/simcore experiment examples/experiments/mmc_servers.yaml --out runs --parallel 4
+# -> runs/mmc_servers/{report.html,report.md,summary.json,results.parquet,...}
+.venv/bin/simcore warmup examples/scenarios/toy_queue/mmc_baseline.yaml --experiment-dir runs/mmc_servers
+.venv/bin/simcore fit samples.csv --column minutes --unit min --out dist.yaml
 ```
+
+See [`docs/guides/experiments.md`](docs/guides/experiments.md).
 
 From Python:
 
