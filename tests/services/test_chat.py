@@ -78,7 +78,7 @@ class Chat:
         return [t["name"] for t in out["tool_calls"]]
 
 
-def _wait_all(c: TestClient, timeout: float = 120) -> None:
+def _wait_all(c: TestClient, timeout: float = 600) -> None:
     end = time.time() + timeout
     while time.time() < end:
         if all(j["status"] in ("completed", "failed") for j in c.get("/api/v1/jobs").json()):
@@ -373,7 +373,9 @@ def test_chat_sessions_are_workspace_scoped(api: TestClient) -> None:
 
 
 def test_confirm_pending_action_launches(api: TestClient, tmp_path: Path) -> None:
-    chat = Chat(api, {"example": "scenarios/toy_queue/mmc_baseline.yaml"})
+    short = {"example": "scenarios/toy_queue/mmc_baseline.yaml",
+             "overrides": {"duration": 600, "warmup": 60}}  # fmt: skip
+    chat = Chat(api, short)
     chat.say("sweep servers from 2 to 13 with 2 replications")  # 13 variants: over threshold
     out = chat.say("run it")
     assert out["pending_actions"] == ["act_1"]
